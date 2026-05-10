@@ -498,7 +498,7 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
     return SafeArea(
       top: false,
       child: Container(
-        height: 84,
+        height: 96,
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [
@@ -520,45 +520,52 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               accent: widget.accent,
               onTap: widget.onItemTap,
             ),
-            GestureDetector(
-              onTapDown: (_) {
-                setState(() {
-                  _searchTapped = true;
-                });
-              },
-              onTapUp: (_) {
-                setState(() {
-                  _searchTapped = false;
-                });
-              },
-              onTapCancel: () {
-                setState(() {
-                  _searchTapped = false;
-                });
-              },
-              onTap: () => widget.onItemTap(1),
-              child: AnimatedScale(
-                scale: _searchTapped ? 0.9 : 1.0,
-                duration: const Duration(milliseconds: 140),
-                curve: Curves.easeOut,
-                child: _NavItem(
-                  icon: Icons.search_rounded,
-                  activeIcon: Icons.search_rounded,
-                  label: 'Search',
-                  index: 1,
-                  selectedIndex: widget.selectedIndex,
-                  accent: widget.accent,
-                  onTap: (_) {},
+            Expanded(
+              child: GestureDetector(
+                onTapDown: (_) {
+                  setState(() {
+                    _searchTapped = true;
+                  });
+                },
+                onTapUp: (_) {
+                  setState(() {
+                    _searchTapped = false;
+                  });
+                },
+                onTapCancel: () {
+                  setState(() {
+                    _searchTapped = false;
+                  });
+                },
+                onTap: () => widget.onItemTap(1),
+                child: AnimatedScale(
+                  scale: _searchTapped ? 0.9 : 1.0,
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOut,
+                  child: _NavItem(
+                    icon: Icons.search_rounded,
+                    activeIcon: Icons.search_rounded,
+                    label: 'Search',
+                    index: 1,
+                    selectedIndex: widget.selectedIndex,
+                    accent: widget.accent,
+                    onTap: (_) {},
+                    isWrappedInExpanded: true,
+                  ),
                 ),
               ),
             ),
-            Expanded(
-              child: Center(
-                child: AnimatedAddButton(
-                  controller: widget.fabPulseController,
-                  accent: widget.accent,
-                  onTap: () => widget.onItemTap(2),
-                ),
+            SizedBox(
+              width: 80,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedAddButton(
+                    controller: widget.fabPulseController,
+                    accent: widget.accent,
+                    onTap: () => widget.onItemTap(2),
+                  ),
+                ],
               ),
             ),
             _NavItem(
@@ -599,6 +606,7 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
     this.showBadge = false,
     this.badgePulseController,
+    this.isWrappedInExpanded = false,
   });
 
   final IconData icon;
@@ -610,73 +618,74 @@ class _NavItem extends StatelessWidget {
   final ValueChanged<int> onTap;
   final bool showBadge;
   final AnimationController? badgePulseController;
+  final bool isWrappedInExpanded;
 
   @override
   Widget build(BuildContext context) {
     final bool isActive = selectedIndex == index;
     final Color itemColor = isActive ? accent : const Color(0xFF191725);
 
-    return Expanded(
-      child: InkWell(
-        onTap: () => onTap(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 32,
-              height: 24,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Center(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: Icon(
-                        isActive ? activeIcon : icon,
-                        key: ValueKey(isActive),
-                        color: itemColor,
-                        size: 24,
-                      ),
+    final inner = InkWell(
+      onTap: () => onTap(index),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 36,
+            height: 28,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    child: Icon(
+                      isActive ? activeIcon : icon,
+                      key: ValueKey(isActive),
+                      color: itemColor,
+                      size: 28,
                     ),
                   ),
-                  if (showBadge && badgePulseController != null)
-                    Positioned(
-                      right: 2,
-                      top: 1,
-                      child: AnimatedBuilder(
-                        animation: badgePulseController!,
-                        builder: (context, child) {
-                          final pulse =
-                              0.85 + (badgePulseController!.value * 0.25);
-                          return Transform.scale(scale: pulse, child: child);
-                        },
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF4A73),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+                ),
+                if (showBadge && badgePulseController != null)
+                  Positioned(
+                    right: 2,
+                    top: 1,
+                    child: AnimatedBuilder(
+                      animation: badgePulseController!,
+                      builder: (context, child) {
+                        final pulse =
+                            0.85 + (badgePulseController!.value * 0.25);
+                        return Transform.scale(scale: pulse, child: child);
+                      },
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF4A73),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: TextStyle(
-                color: itemColor,
-                fontSize: 12,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-              ),
-              child: Text(label),
+          ),
+          const SizedBox(height: 4),
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
+            style: TextStyle(
+              color: itemColor,
+              fontSize: 12,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
-          ],
-        ),
+            child: Text(label),
+          ),
+        ],
       ),
     );
+
+    return isWrappedInExpanded ? inner : Expanded(child: inner);
   }
 }
 
@@ -725,9 +734,9 @@ class AnimatedAddButton extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: const SizedBox(
-            width: 58,
-            height: 58,
-            child: Icon(Icons.add_rounded, color: Colors.white, size: 34),
+            width: 64,
+            height: 64,
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 38),
           ),
         ),
       ),
