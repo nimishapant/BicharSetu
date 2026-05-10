@@ -571,7 +571,7 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
             _NavItem(
               icon: Icons.notifications_none_rounded,
               activeIcon: Icons.notifications_rounded,
-              label: 'Alerts',
+              label: 'Notifications',
               index: 3,
               selectedIndex: widget.selectedIndex,
               accent: widget.accent,
