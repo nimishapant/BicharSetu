@@ -14,7 +14,91 @@ class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   static const Color _accent = Color(0xFF6A3DE8);
 
-  final List<Map<String, dynamic>> _posts = [];
+  final List<Map<String, dynamic>> _posts = [
+    {
+      'username': 'Ananya Sharma',
+      'time': '2 min ago',
+      'caption':
+          'Just finished reading "The Alchemist" for the third time. Every read hits differently. What book changed your perspective on life? 📚✨',
+      'likes': 142,
+      'comments': 38,
+      'shares': 12,
+      'hasImage': false,
+      'avatarColor': const Color(0xFF7C4DFF),
+    },
+    {
+      'username': 'Rohan Thapa',
+      'time': '15 min ago',
+      'caption':
+          'Sunrise hike to Nagarkot this morning — absolutely breathtaking view. Sometimes you just need to disconnect and let nature do the talking. 🌄',
+      'likes': 289,
+      'comments': 54,
+      'shares': 31,
+      'hasImage': true,
+      'avatarColor': const Color(0xFF00897B),
+      'imageStart': const Color(0xFFFF6F61),
+      'imageEnd': const Color(0xFFFF8F4C),
+    },
+    {
+      'username': 'Priya Koirala',
+      'time': '1 hr ago',
+      'caption':
+          'Hot take: learning to cook your own meals is the single most impactful life skill. Save money, eat healthier, impress everyone. 🍳',
+      'likes': 97,
+      'comments': 22,
+      'shares': 8,
+      'hasImage': false,
+      'avatarColor': const Color(0xFFE91E8C),
+    },
+    {
+      'username': 'Siddharth Rai',
+      'time': '2 hr ago',
+      'caption':
+          'Working on a new Flutter project — the widget tree is deep but the result is going to be worth it. Stay tuned! 🚀 #FlutterDev #MobileApp',
+      'likes': 204,
+      'comments': 47,
+      'shares': 19,
+      'hasImage': true,
+      'avatarColor': const Color(0xFF1565C0),
+      'imageStart': const Color(0xFF6A3DE8),
+      'imageEnd': const Color(0xFF9C6EFA),
+    },
+    {
+      'username': 'Meena Gurung',
+      'time': '3 hr ago',
+      'caption':
+          'Reminder: it\'s okay to rest. You don\'t have to earn your rest. Rest is not a reward, it\'s a necessity. Take care of yourselves 💛',
+      'likes': 521,
+      'comments': 83,
+      'shares': 64,
+      'hasImage': false,
+      'avatarColor': const Color(0xFFF57C00),
+    },
+    {
+      'username': 'Bikram Lama',
+      'time': '5 hr ago',
+      'caption':
+          'Kathmandu traffic at 8 AM vs Kathmandu traffic at 8:05 AM: no difference. But hey, at least the weather is perfect today! ☀️',
+      'likes': 376,
+      'comments': 91,
+      'shares': 43,
+      'hasImage': false,
+      'avatarColor': const Color(0xFF00796B),
+    },
+    {
+      'username': 'Samiksha Joshi',
+      'time': '7 hr ago',
+      'caption':
+          'Finally visited Pokhara after 2 years. Phewa lake in the evening is something else entirely. Nature > everything. 🏔️🌊',
+      'likes': 618,
+      'comments': 102,
+      'shares': 77,
+      'hasImage': true,
+      'avatarColor': const Color(0xFFAD1457),
+      'imageStart': const Color(0xFF26C6DA),
+      'imageEnd': const Color(0xFF00897B),
+    },
+  ];
   int _selectedIndex = 0;
   bool _isRefreshing = false;
   late final AnimationController _badgePulseController;
