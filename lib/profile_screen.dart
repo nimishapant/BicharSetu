@@ -91,13 +91,16 @@ class _ProfileAppBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       child: Row(
         children: [
-          const Text(
-            'BicharSetu',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: _textDark,
-              letterSpacing: 0.2,
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: const Text(
+              'BicharSetu',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: _textDark,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
           const Spacer(),
