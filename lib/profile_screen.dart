@@ -405,7 +405,7 @@ class _ActionRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Verified Lekhak Banner
+// Verified BicharSetu Banner
 // ─────────────────────────────────────────────────────────────────────────────
 class _VerifiedBanner extends StatefulWidget {
   @override
@@ -500,7 +500,7 @@ class _VerifiedBannerState extends State<_VerifiedBanner>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Be a Verified Lekhak! ⭐',
+                          'Be a Verified BicharSetu! ⭐',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
