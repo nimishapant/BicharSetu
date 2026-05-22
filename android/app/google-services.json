@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "183757970343",
+    "firebase_url": "https://bicharsetu1-default-rtdb.firebaseio.com",
+    "project_id": "bicharsetu1",
+    "storage_bucket": "bicharsetu1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183757970343:android:c425585d203c4c9f903482",
+        "android_client_info": {
+          "package_name": "com.example.bichar_setu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3lo9g0WyOEuK5_ZwRFW1dLiM7tnSTBEg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
