@@ -18,8 +18,8 @@ class ProfileEditScreen extends StatefulWidget {
 }
 
 class _ProfileEditScreenState extends State<ProfileEditScreen> {
-  final _usernameCtrl = TextEditingController(text: 'Aditya');
-  final _emailCtrl = TextEditingController(text: 'adityasama98@gmail.com');
+  final _usernameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _aboutCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
@@ -487,14 +487,14 @@ class _UpdateButton extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFC0392B), Color(0xFFE74C3C)],
+              colors: [_accent, Color(0xFF8B6EFF)],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFC0392B).withValues(alpha: 0.35),
+                color: _accent.withValues(alpha: 0.35),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
