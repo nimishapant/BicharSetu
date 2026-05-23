@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'createpost_screen.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -278,6 +279,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           badgePulseController: _badgePulseController,
           fabPulseController: _fabPulseController,
           onItemTap: (index) {
+            if (index == 2) {
+              CreatePostScreen.show(context);
+              return;
+            }
             setState(() {
               _selectedIndex = index;
             });
