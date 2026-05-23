@@ -1,6 +1,7 @@
-import 'dart:math' as math;
+
 
 import 'package:flutter/material.dart';
+import 'profileedit_screen.dart';
 
 // ─── Theme constants (matches dashboard_screen.dart) ────────────────────────
 const Color _accent = Color(0xFF6A3DE8);
@@ -177,7 +178,7 @@ class _ProfileHeader extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: const Color(0xFFEDE8FB),
-                      border: Border.all(color: _accent.withOpacity(0.25), width: 2.5),
+                      border: Border.all(color: _accent.withValues(alpha: 0.25), width: 2.5),
                     ),
                     child: const Icon(
                       Icons.person_rounded,
@@ -347,7 +348,13 @@ class _ActionRow extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(30),
-                onTap: () {},
+                onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ProfileEditScreen(),
+                      ),
+                    );
+                  },
                 child: Ink(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
@@ -358,7 +365,7 @@ class _ActionRow extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                     boxShadow: [
                       BoxShadow(
-                        color: _accent.withOpacity(0.35),
+                        color: _accent.withValues(alpha: 0.35),
                         blurRadius: 14,
                         offset: const Offset(0, 5),
                       ),
@@ -468,7 +475,7 @@ class _VerifiedBannerState extends State<_VerifiedBanner>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: _accent.withOpacity(0.3),
+                      color: _accent.withValues(alpha: 0.3),
                       blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
@@ -485,7 +492,7 @@ class _VerifiedBannerState extends State<_VerifiedBanner>
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
