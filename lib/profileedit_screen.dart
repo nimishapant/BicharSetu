@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'repo/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // ─── Theme constants (matches profile_screen.dart) ───────────────────────────
 const Color _accent = Color(0xFF6A3DE8);
@@ -24,6 +26,33 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
   static const int _aboutMaxLength = 150;
+  bool _isLoading = false;
+  bool _isFetching = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final user = await AuthService().getCurrentUserModel();
+      if (user != null) {
+        _usernameCtrl.text = user.username;
+        _emailCtrl.text = user.email;
+        _aboutCtrl.text = user.aboutMe;
+      }
+    } catch (_) {
+      // Fallback
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isFetching = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -33,8 +62,20 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     super.dispose();
   }
 
-  void _onUpdateProfile() {
-    if (_formKey.currentState?.validate() ?? false) {
+  Future<void> _onUpdateProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AuthService().updateUserProfile(
+        username: _usernameCtrl.text,
+        email: _emailCtrl.text,
+        aboutMe: _aboutCtrl.text,
+      );
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           behavior: SnackBarBehavior.floating,
@@ -53,6 +94,29 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           ),
         ),
       );
+      Navigator.of(context).pop();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Failed to update profile.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -67,7 +131,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
             _EditAppBar(),
             // ── Scrollable content ───────────────────────────────────────────
             Expanded(
-              child: SingleChildScrollView(
+              child: _isFetching
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: _accent,
+                      ),
+                    )
+                  : SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Form(
                   key: _formKey,
@@ -136,7 +206,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                             ),
                             const SizedBox(height: 32),
                             // Update Profile button
-                            _UpdateButton(onTap: _onUpdateProfile),
+                            _UpdateButton(
+                              onTap: _onUpdateProfile,
+                              isLoading: _isLoading,
+                            ),
                             const SizedBox(height: 28),
                           ],
                         ),
@@ -474,8 +547,9 @@ class _AboutField extends StatelessWidget {
 }
 
 class _UpdateButton extends StatelessWidget {
-  const _UpdateButton({required this.onTap});
+  const _UpdateButton({required this.onTap, this.isLoading = false});
   final VoidCallback onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +557,7 @@ class _UpdateButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
-        onTap: onTap,
+        onTap: isLoading ? null : onTap,
         child: Ink(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -500,18 +574,27 @@ class _UpdateButton extends StatelessWidget {
               ),
             ],
           ),
-          child: const SizedBox(
+          child: SizedBox(
             height: 54,
             child: Center(
-              child: Text(
-                'Update Profile',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  letterSpacing: 0.4,
-                ),
-              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Update Profile',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
             ),
           ),
         ),

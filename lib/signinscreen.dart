@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'loginScreen.dart';
+import 'repo/auth_service.dart';
+import 'dashboard_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -295,14 +298,49 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       _isLoading = true;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account created successfully')),
-    );
+
+    try {
+      await AuthService().signUpWithEmailAndPassword(
+        username: _usernameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully! Welcome to BicharSetu.'),
+          backgroundColor: Color(0xFF5B2DDE),
+        ),
+      );
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Registration failed. Please try again.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }
 

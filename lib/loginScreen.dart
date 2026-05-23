@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'forgetpassword.dart';
 import 'signinscreen.dart';
+import 'repo/auth_service.dart';
+import 'dashboard_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -328,36 +331,46 @@ class _LoginScreenState extends State<LoginScreen> {
       final emailOrUsername = _emailController.text.trim();
       final password = _passwordController.text;
 
-      await _loginWithBackend(
+      await AuthService().signInWithEmailOrUsername(
         emailOrUsername: emailOrUsername,
         password: password,
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Logged in as $emailOrUsername')),
+        SnackBar(
+          content: Text('Logged in successfully as $emailOrUsername'),
+          backgroundColor: const Color(0xFF5B2DDE),
+        ),
       );
-    } catch (_) {
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed. Please try again.')),
+        SnackBar(
+          content: Text(e.message ?? 'Login failed. Please try again.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
     } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-  }
-
-  Future<void> _loginWithBackend({
-    required String emailOrUsername,
-    required String password,
-  }) async {
-    // TODO: Replace this with your real auth service call.
-    // Example:
-    // await AuthService.login(emailOrUsername: emailOrUsername, password: password);
-    await Future<void>.delayed(const Duration(milliseconds: 900));
   }
 }
 

@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'profileedit_screen.dart';
+import 'repo/auth_service.dart';
+import 'model/user_model.dart';
+import 'loginScreen.dart';
 
 // ─── Theme constants (matches dashboard_screen.dart) ────────────────────────
 const Color _accent = Color(0xFF6A3DE8);
@@ -39,44 +42,136 @@ class _ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ── App bar ──────────────────────────────────────────────────────
-            _ProfileAppBar(),
-            // ── Scrollable body ──────────────────────────────────────────────
-            Expanded(
-              child: NestedScrollView(
-                headerSliverBuilder: (context, _) => [
-                  SliverToBoxAdapter(child: _ProfileHeader()),
-                  SliverToBoxAdapter(child: _StatsRow()),
-                  SliverToBoxAdapter(child: _BioSection()),
-                  SliverToBoxAdapter(child: _ActionRow()),
-                  SliverToBoxAdapter(child: _VerifiedBanner()),
-                  SliverToBoxAdapter(
-                    child: _TabBar(
-                      controller: _tabController,
-                      selectedIndex: _selectedTab,
-                    ),
-                  ),
-                ],
-                body: TabBarView(
-                  controller: _tabController,
-                  children: const [
-                    _ArticlesTab(),
-                    _LikedTab(),
-                    _AboutTab(),
-                  ],
+  void _showSettingsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 5),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Settings',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D1A29),
+                  ),
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                title: const Text(
+                  'Sign Out',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () async {
+                  Navigator.of(context).pop(); // Close bottom sheet
+                  await AuthService().signOut();
+                  if (!context.mounted) return;
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getMonth(DateTime dt) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[dt.month - 1];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<UserModel?>(
+      stream: AuthService().currentUserModelStream,
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final usernameDisplay = user?.username ?? 'Aditya';
+        final emailDisplay = user?.email ?? 'adityasama98@gmail.com';
+        final bioDisplay = user?.aboutMe ?? '';
+        final joinedDisplay = user?.createdAt != null
+            ? '${_getMonth(user!.createdAt!)} ${user.createdAt!.year}'
+            : 'May 2026';
+
+        return Scaffold(
+          backgroundColor: _bg,
+          body: SafeArea(
+            child: Column(
+              children: [
+                // ── App bar ──────────────────────────────────────────────────────
+                _ProfileAppBar(),
+                // ── Scrollable body ──────────────────────────────────────────────
+                Expanded(
+                  child: NestedScrollView(
+                    headerSliverBuilder: (context, _) => [
+                      SliverToBoxAdapter(
+                        child: _ProfileHeader(
+                          username: usernameDisplay,
+                          displayName: usernameDisplay,
+                        ),
+                      ),
+                      SliverToBoxAdapter(child: _StatsRow()),
+                      SliverToBoxAdapter(
+                        child: _BioSection(bio: bioDisplay),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _ActionRow(
+                          onSettingsTap: () => _showSettingsBottomSheet(context),
+                        ),
+                      ),
+                      SliverToBoxAdapter(child: _VerifiedBanner()),
+                      SliverToBoxAdapter(
+                        child: _TabBar(
+                          controller: _tabController,
+                          selectedIndex: _selectedTab,
+                        ),
+                      ),
+                    ],
+                    body: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        const _ArticlesTab(),
+                        const _LikedTab(),
+                        _AboutTab(joinedDate: joinedDisplay, email: emailDisplay),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -139,6 +234,14 @@ class _IconBtn extends StatelessWidget {
 // Profile Header (avatar + name + camera)
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProfileHeader extends StatelessWidget {
+  final String username;
+  final String displayName;
+
+  const _ProfileHeader({
+    required this.username,
+    required this.displayName,
+  });
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -210,9 +313,9 @@ class _ProfileHeader extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Aditya',
-                    style: TextStyle(
+                  Text(
+                    displayName,
+                    style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: _textDark,
@@ -220,8 +323,8 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '@aditya',
-                    style: TextStyle(
+                    '@$username',
+                    style: const TextStyle(
                       fontSize: 14,
                       color: _textMid,
                       fontWeight: FontWeight.w500,
@@ -313,18 +416,21 @@ class _StatDivider extends StatelessWidget {
 // Bio Section
 // ─────────────────────────────────────────────────────────────────────────────
 class _BioSection extends StatelessWidget {
+  final String bio;
+  const _BioSection({required this.bio});
+
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       color: _surface,
       padding: const EdgeInsets.fromLTRB(18, 4, 18, 14),
-      child: const Text(
-        'Add a bio to tell your story...',
+      child: Text(
+        bio.isEmpty ? 'Add a bio to tell your story...' : bio,
         style: TextStyle(
           fontSize: 14,
           color: _textMid,
-          fontStyle: FontStyle.italic,
+          fontStyle: bio.isEmpty ? FontStyle.italic : FontStyle.normal,
         ),
       ),
     );
@@ -335,6 +441,9 @@ class _BioSection extends StatelessWidget {
 // Edit Profile + Settings button row
 // ─────────────────────────────────────────────────────────────────────────────
 class _ActionRow extends StatelessWidget {
+  final VoidCallback onSettingsTap;
+  const _ActionRow({required this.onSettingsTap});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -349,12 +458,12 @@ class _ActionRow extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(30),
                 onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const ProfileEditScreen(),
-                      ),
-                    );
-                  },
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ProfileEditScreen(),
+                    ),
+                  );
+                },
                 child: Ink(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
@@ -391,18 +500,21 @@ class _ActionRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           // Settings button
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: _border, width: 1.5),
-              color: const Color(0xFFF8F7FC),
-            ),
-            child: const Icon(
-              Icons.settings_outlined,
-              color: _textMid,
-              size: 22,
+          GestureDetector(
+            onTap: onSettingsTap,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: _border, width: 1.5),
+                color: const Color(0xFFF8F7FC),
+              ),
+              child: const Icon(
+                Icons.settings_outlined,
+                color: _textMid,
+                size: 22,
+              ),
             ),
           ),
         ],
@@ -616,7 +728,13 @@ class _LikedTab extends StatelessWidget {
 // Tab content: About
 // ─────────────────────────────────────────────────────────────────────────────
 class _AboutTab extends StatelessWidget {
-  const _AboutTab();
+  final String joinedDate;
+  final String email;
+
+  const _AboutTab({
+    required this.joinedDate,
+    required this.email,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -624,6 +742,12 @@ class _AboutTab extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
+          _AboutTile(
+            icon: Icons.mail_outline_rounded,
+            label: 'Email',
+            value: email,
+          ),
+          const SizedBox(height: 10),
           _AboutTile(
             icon: Icons.cake_outlined,
             label: 'Birthday',
@@ -645,7 +769,7 @@ class _AboutTab extends StatelessWidget {
           _AboutTile(
             icon: Icons.calendar_today_outlined,
             label: 'Joined',
-            value: 'May 2026',
+            value: joinedDate,
           ),
         ],
       ),

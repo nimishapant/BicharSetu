@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'repo/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForgetPasswordScreen extends StatefulWidget {
   const ForgetPasswordScreen({super.key});
@@ -146,17 +148,41 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
     setState(() {
       _isLoading = true;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Password reset link sent to ${_emailController.text.trim()}',
+
+    try {
+      final email = _emailController.text.trim();
+      await AuthService().sendPasswordResetEmail(email: email);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset link sent to $email'),
+          backgroundColor: const Color(0xFF5B2DDE),
         ),
-      ),
-    );
+      );
+      Navigator.of(context).pop();
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.message ?? 'Failed to send reset link.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An unexpected error occurred: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dashboard_screen.dart';
+import 'loginScreen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -38,10 +40,13 @@ class _SplashScreenState extends State<SplashScreen>
     // Navigate after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
+        final currentUser = FirebaseAuth.instance.currentUser;
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             transitionDuration: const Duration(milliseconds: 500),
-            pageBuilder: (_, __, ___) => const DashboardScreen(),
+            pageBuilder: (_, __, ___) => currentUser != null
+                ? const DashboardScreen()
+                : const LoginScreen(),
             transitionsBuilder: (_, animation, __, child) {
               return FadeTransition(opacity: animation, child: child);
             },
@@ -82,10 +87,10 @@ class _SplashScreenState extends State<SplashScreen>
                 height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.white.withValues(alpha: 0.08),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.blueAccent.withOpacity(0.35),
+                      color: Colors.blueAccent.withValues(alpha: 0.35),
                       blurRadius: 60,
                       spreadRadius: 10,
                     ),
@@ -112,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen>
               Text(
                 'Bridging Thoughts',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.55),
+                  color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 14,
                   letterSpacing: 2.0,
                   fontWeight: FontWeight.w400,
