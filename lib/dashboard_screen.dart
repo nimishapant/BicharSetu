@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'app_navigation_drawer.dart';
 import 'createpost_screen.dart';
+import 'dashboard_app_bar.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -103,6 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   ];
   int _selectedIndex = 0;
   bool _isRefreshing = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final AnimationController _badgePulseController;
   late final AnimationController _fabPulseController;
 
@@ -152,6 +155,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         scaffoldBackgroundColor: const Color(0xFFF7F7FB),
       ),
       child: Scaffold(
+        key: _scaffoldKey,
+        drawer: const AppNavigationDrawer(),
+        drawerEnableOpenDragGesture: true,
         body: SafeArea(
           child: RefreshIndicator(
             color: _accent,
@@ -169,17 +175,27 @@ class _DashboardScreenState extends State<DashboardScreen>
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
                   shadowColor: Colors.transparent,
-                  toolbarHeight: 72,
-                  titleSpacing: 20,
-                  centerTitle: true,
-                  title: const Text(
-                    'BicharSetu',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1D1A29),
-                      letterSpacing: 0.2,
-                    ),
+                  toolbarHeight: 64,
+                  automaticallyImplyLeading: false,
+                  titleSpacing: 0,
+                  title: DashboardAppBarContent(
+                    onProfileTap: () => _scaffoldKey.currentState?.openDrawer(),
+                    onSearchTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text('Search — coming soon'),
+                        ),
+                      );
+                    },
+                    onSparkleTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text('Featured — coming soon'),
+                        ),
+                      );
+                    },
                   ),
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(1),
