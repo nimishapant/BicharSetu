@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'loginScreen.dart';
 import 'model/user_model.dart';
 import 'profile_screen.dart';
 import 'repo/auth_service.dart';
@@ -57,6 +58,39 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
     );
   }
 
+  Future<void> _onSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              'Sign out',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    Navigator.of(context).pop();
+    await AuthService().signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -106,6 +140,16 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                     icon: Icons.help_outline_rounded,
                     label: 'Help Center',
                     onTap: () => _showComingSoon('Help Center'),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, thickness: 1, color: _divider),
+                  const SizedBox(height: 8),
+                  _DrawerTile(
+                    icon: Icons.logout_rounded,
+                    label: 'Sign out',
+                    iconColor: Colors.redAccent,
+                    labelColor: Colors.redAccent,
+                    onTap: _onSignOut,
                   ),
                 ],
               ),
@@ -278,11 +322,15 @@ class _DrawerTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconColor = _textDark,
+    this.labelColor = _textDark,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color iconColor;
+  final Color labelColor;
 
   @override
   Widget build(BuildContext context) {
@@ -295,15 +343,15 @@ class _DrawerTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 11),
           child: Row(
             children: [
-              Icon(icon, size: 24, color: _textDark),
+              Icon(icon, size: 24, color: iconColor),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: _textDark,
+                    color: labelColor,
                   ),
                 ),
               ),
