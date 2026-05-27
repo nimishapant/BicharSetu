@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'repo/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,6 +29,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   static const int _aboutMaxLength = 150;
   bool _isLoading = false;
   bool _isFetching = true;
+  bool _isUploadingPhoto = false;
+  bool _isUploadingCoverPhoto = false;
+  String _profilePhotoUrl = '';
+  String _coverPhotoUrl = '';
 
   @override
   void initState() {
@@ -42,6 +47,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _usernameCtrl.text = user.username;
         _emailCtrl.text = user.email;
         _aboutCtrl.text = user.aboutMe;
+        _profilePhotoUrl = user.profilePhoto;
+        _coverPhotoUrl = user.coverPhoto;
       }
     } catch (_) {
       // Fallback
@@ -120,6 +127,106 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     }
   }
 
+  Future<ImageSource?> _chooseImageSource() async {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Camera'),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Gallery'),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndUploadProfilePhoto() async {
+    if (_isUploadingPhoto) return;
+    final source = await _chooseImageSource();
+    if (source == null || !mounted) return;
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1080,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isUploadingPhoto = true);
+    try {
+      final photoUrl =
+          await AuthService().uploadProfilePhotoFromXFile(picked);
+      if (!mounted) return;
+      setState(() => _profilePhotoUrl = photoUrl);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Profile photo updated'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          content: Text('Failed to upload photo: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  Future<void> _pickAndUploadCoverPhoto() async {
+    if (_isUploadingCoverPhoto) return;
+    final source = await _chooseImageSource();
+    if (source == null || !mounted) return;
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1920,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isUploadingCoverPhoto = true);
+    try {
+      final coverUrl = await AuthService().uploadCoverPhotoFromXFile(picked);
+      if (!mounted) return;
+      setState(() => _coverPhotoUrl = coverUrl);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text('Cover photo updated'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          content: Text('Failed to upload cover: $e'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingCoverPhoto = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -145,9 +252,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Cover photo area
-                      _CoverPhotoSection(),
+                      _CoverPhotoSection(
+                        coverPhotoUrl: _coverPhotoUrl,
+                        isUploadingCoverPhoto: _isUploadingCoverPhoto,
+                        onTap: _pickAndUploadCoverPhoto,
+                      ),
                       // Profile photo row
-                      _ProfilePhotoRow(),
+                      _ProfilePhotoRow(
+                        profilePhotoUrl: _profilePhotoUrl,
+                        isUploadingPhoto: _isUploadingPhoto,
+                        onTap: _pickAndUploadProfilePhoto,
+                      ),
                       const SizedBox(height: 24),
                       // Form fields
                       Padding(
@@ -300,19 +415,37 @@ class _AppBarIcon extends StatelessWidget {
 // Cover Photo Section
 // ─────────────────────────────────────────────────────────────────────────────
 class _CoverPhotoSection extends StatelessWidget {
+  const _CoverPhotoSection({
+    required this.coverPhotoUrl,
+    required this.isUploadingCoverPhoto,
+    required this.onTap,
+  });
+
+  final String coverPhotoUrl;
+  final bool isUploadingCoverPhoto;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {}, // pick cover photo
+      onTap: onTap,
       child: Container(
         width: double.infinity,
         height: 160,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFB0A8CC), Color(0xFF9E96BF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+        decoration: BoxDecoration(
+          gradient: coverPhotoUrl.isEmpty
+              ? const LinearGradient(
+                  colors: [Color(0xFFB0A8CC), Color(0xFF9E96BF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          image: coverPhotoUrl.isEmpty
+              ? null
+              : DecorationImage(
+                  image: NetworkImage(coverPhotoUrl),
+                  fit: BoxFit.cover,
+                ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -324,11 +457,19 @@ class _CoverPhotoSection extends StatelessWidget {
                 color: Colors.white.withValues(alpha: 0.18),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.camera_alt_outlined,
-                color: Colors.white,
-                size: 22,
-              ),
+              child: isUploadingCoverPhoto
+                  ? const Padding(
+                      padding: EdgeInsets.all(11),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.camera_alt_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -351,6 +492,16 @@ class _CoverPhotoSection extends StatelessWidget {
 // Profile Photo Row (avatar + label)
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProfilePhotoRow extends StatelessWidget {
+  const _ProfilePhotoRow({
+    required this.profilePhotoUrl,
+    required this.isUploadingPhoto,
+    required this.onTap,
+  });
+
+  final String profilePhotoUrl;
+  final bool isUploadingPhoto;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -363,7 +514,7 @@ class _ProfilePhotoRow extends StatelessWidget {
           Transform.translate(
             offset: const Offset(0, -28),
             child: GestureDetector(
-              onTap: () {}, // pick avatar
+              onTap: onTap,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -375,11 +526,27 @@ class _ProfilePhotoRow extends StatelessWidget {
                       color: const Color(0xFFEDE8FB),
                       border: Border.all(color: _surface, width: 3.5),
                     ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 50,
-                      color: Color(0xFFB0A8CC),
-                    ),
+                    child: profilePhotoUrl.isEmpty
+                        ? const Icon(
+                            Icons.person_rounded,
+                            size: 50,
+                            color: Color(0xFFB0A8CC),
+                          )
+                        : ClipOval(
+                            child: Image.network(
+                              profilePhotoUrl,
+                              width: 86,
+                              height: 86,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.person_rounded,
+                                  size: 50,
+                                  color: Color(0xFFB0A8CC),
+                                );
+                              },
+                            ),
+                          ),
                   ),
                   Positioned(
                     bottom: 2,
@@ -391,11 +558,19 @@ class _ProfilePhotoRow extends StatelessWidget {
                         color: _accent,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.camera_alt_rounded,
-                        color: Colors.white,
-                        size: 14,
-                      ),
+                      child: isUploadingPhoto
+                          ? const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.camera_alt_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
                     ),
                   ),
                 ],

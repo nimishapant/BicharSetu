@@ -1,15 +1,35 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../firebase_options.dart';
 import '../model/user_model.dart';
 
 class AuthService {
+  AuthService._internal();
+
+  factory AuthService() => _instance;
+
+  static final AuthService _instance = AuthService._internal();
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Singleton instance
-  static final AuthService _instance = AuthService._internal();
-  factory AuthService() => _instance;
-  AuthService._internal();
+  static const String _primaryBucket =
+      'bicharsetu-699d4.firebasestorage.app';
+  static const String _legacyBucket = 'bicharsetu-699d4.appspot.com';
+
+  FirebaseStorage _storageForBucket(String bucket) {
+    return FirebaseStorage.instanceFor(
+      app: Firebase.app(),
+      bucket: bucket,
+    );
+  }
 
   // Get current user stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
@@ -23,7 +43,6 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    // 1. Check if username is already taken in Firestore
     final usernameQuery = await _firestore
         .collection('users')
         .where('username', isEqualTo: username.trim())
@@ -37,7 +56,6 @@ class AuthService {
       );
     }
 
-    // 2. Create user in Firebase Auth
     final UserCredential credential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
       password: password,
@@ -51,7 +69,6 @@ class AuthService {
       );
     }
 
-    // 3. Save user info to Firestore
     final UserModel userModel = UserModel(
       uid: user.uid,
       username: username.trim(),
@@ -65,14 +82,12 @@ class AuthService {
     return userModel;
   }
 
-  // Sign in with Email or Username and Password
   Future<UserCredential> signInWithEmailOrUsername({
     required String emailOrUsername,
     required String password,
   }) async {
     String email = emailOrUsername.trim();
 
-    // If it doesn't look like an email (no '@'), treat as username
     if (!email.contains('@')) {
       final usernameQuery = await _firestore
           .collection('users')
@@ -90,24 +105,20 @@ class AuthService {
       email = usernameQuery.docs.first.get('email') as String;
     }
 
-    // Sign in with the resolved email and password
-    return await _auth.signInWithEmailAndPassword(
+    return _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
   }
 
-  // Send password reset email
   Future<void> sendPasswordResetEmail({required String email}) async {
     await _auth.sendPasswordResetEmail(email: email.trim());
   }
 
-  // Sign out
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
-  // Get current user profile from Firestore
   Future<UserModel?> getCurrentUserModel() async {
     final User? user = _auth.currentUser;
     if (user == null) return null;
@@ -116,7 +127,6 @@ class AuthService {
         await _firestore.collection('users').doc(user.uid).get();
 
     if (!doc.exists || doc.data() == null) {
-      // Create user doc if auth exists but firestore doc is missing (fallback)
       final fallbackModel = UserModel(
         uid: user.uid,
         username: user.email?.split('@').first ?? 'User',
@@ -130,7 +140,6 @@ class AuthService {
     return UserModel.fromMap(doc.data() as Map<String, dynamic>);
   }
 
-  // Stream current user details from Firestore
   Stream<UserModel?> get currentUserModelStream {
     return _auth.authStateChanges().asyncMap((user) async {
       if (user == null) return null;
@@ -144,7 +153,6 @@ class AuthService {
     });
   }
 
-  // Update user profile in Firestore
   Future<void> updateUserProfile({
     required String username,
     required String email,
@@ -153,7 +161,6 @@ class AuthService {
     final User? user = _auth.currentUser;
     if (user == null) throw Exception('No user signed in');
 
-    // Check if the username is taken by a different user
     final usernameQuery = await _firestore
         .collection('users')
         .where('username', isEqualTo: username.trim())
@@ -168,21 +175,134 @@ class AuthService {
       }
     }
 
-    // Update in Firestore
     await _firestore.collection('users').doc(user.uid).update({
       'username': username.trim(),
       'email': email.trim(),
       'aboutMe': aboutMe.trim(),
     });
 
-    // Optionally update email in Firebase Auth
     if (user.email != email.trim()) {
       try {
         await user.verifyBeforeUpdateEmail(email.trim());
-      } catch (_) {
-        // Safe to ignore if they need to re-authenticate first,
-        // Firestore remains the main display metadata source.
+      } catch (_) {}
+    }
+  }
+
+  Future<String> uploadProfilePhoto({required String filePath}) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Image file not found. Please pick the image again.');
+    }
+    final bytes = await file.readAsBytes();
+    return _uploadImage(
+      bytes: bytes,
+      storageFolder: 'profile_photos',
+      fileName: 'profile.jpg',
+      firestoreField: 'profilePhoto',
+    );
+  }
+
+  Future<String> uploadProfilePhotoFromXFile(XFile file) async {
+    final bytes = await file.readAsBytes();
+    return _uploadImage(
+      bytes: bytes,
+      storageFolder: 'profile_photos',
+      fileName: 'profile.jpg',
+      firestoreField: 'profilePhoto',
+    );
+  }
+
+  Future<String> uploadCoverPhoto({required String filePath}) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('Image file not found. Please pick the image again.');
+    }
+    final bytes = await file.readAsBytes();
+    return _uploadImage(
+      bytes: bytes,
+      storageFolder: 'cover_photos',
+      fileName: 'cover.jpg',
+      firestoreField: 'coverPhoto',
+    );
+  }
+
+  Future<String> uploadCoverPhotoFromXFile(XFile file) async {
+    final bytes = await file.readAsBytes();
+    return _uploadImage(
+      bytes: bytes,
+      storageFolder: 'cover_photos',
+      fileName: 'cover.jpg',
+      firestoreField: 'coverPhoto',
+    );
+  }
+
+  Future<String> _uploadImage({
+    required Uint8List bytes,
+    required String storageFolder,
+    required String fileName,
+    required String firestoreField,
+  }) async {
+    final User? user = _auth.currentUser;
+    if (user == null) throw Exception('No user signed in');
+
+    final configuredBucket =
+        DefaultFirebaseOptions.currentPlatform.storageBucket ?? _primaryBucket;
+
+    final bucketsToTry = <String>{
+      configuredBucket,
+      _primaryBucket,
+      _legacyBucket,
+    }.toList();
+
+    FirebaseException? lastError;
+
+    for (final bucket in bucketsToTry) {
+      try {
+        final storage = _storageForBucket(bucket);
+        final ref = storage
+            .ref()
+            .child(storageFolder)
+            .child(user.uid)
+            .child(fileName);
+
+        final metadata = SettableMetadata(
+          contentType: 'image/jpeg',
+          cacheControl: 'public,max-age=31536000',
+        );
+
+        final snapshot = await ref.putData(bytes, metadata);
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+
+        await _firestore.collection('users').doc(user.uid).set(
+          {firestoreField: downloadUrl},
+          SetOptions(merge: true),
+        );
+
+        return downloadUrl;
+      } on FirebaseException catch (e) {
+        lastError = e;
+        final retryable = e.code == 'object-not-found' ||
+            e.code == 'bucket-not-found' ||
+            e.code == 'not-found';
+        if (!retryable) rethrow;
       }
     }
+
+    throw FirebaseException(
+      plugin: 'firebase_storage',
+      code: lastError?.code ?? 'upload-failed',
+      message: _friendlyStorageMessage(lastError),
+    );
+  }
+
+  String _friendlyStorageMessage(FirebaseException? error) {
+    if (error?.code == 'unauthorized' || error?.code == 'permission-denied') {
+      return 'Storage permission denied. Update Firebase Storage rules to allow authenticated uploads.';
+    }
+    if (error?.code == 'object-not-found' || error?.code == 'bucket-not-found') {
+      return 'Firebase Storage bucket is not set up. Open Firebase Console → Storage → Get started, then try again.';
+    }
+    return error?.message ??
+        'Could not upload image. Please check Firebase Storage setup.';
   }
 }
