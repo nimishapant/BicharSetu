@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'app_navigation_drawer.dart';
 import 'createpost_screen.dart';
+import 'dashboard_app_bar.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -103,6 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   ];
   int _selectedIndex = 0;
   bool _isRefreshing = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final AnimationController _badgePulseController;
   late final AnimationController _fabPulseController;
 
@@ -152,6 +155,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         scaffoldBackgroundColor: const Color(0xFFF7F7FB),
       ),
       child: Scaffold(
+        key: _scaffoldKey,
+        drawer: const AppNavigationDrawer(),
+        drawerEnableOpenDragGesture: true,
         body: SafeArea(
           child: RefreshIndicator(
             color: _accent,
@@ -169,68 +175,28 @@ class _DashboardScreenState extends State<DashboardScreen>
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
                   shadowColor: Colors.transparent,
-                  toolbarHeight: 72,
-                  titleSpacing: 20,
-                  title: const Text(
-                    'BicharSetu',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1D1A29),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  actions: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 18),
-                      child: Hero(
-                        tag: 'dashboard_profile_avatar',
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                PageRouteBuilder(
-                                  transitionDuration: const Duration(milliseconds: 350),
-                                  pageBuilder: (_, __, ___) => const ProfileScreen(),
-                                  transitionsBuilder: (_, animation, __, child) {
-                                    return SlideTransition(
-                                      position: Tween<Offset>(
-                                        begin: const Offset(1.0, 0.0),
-                                        end: Offset.zero,
-                                      ).animate(CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOutCubic,
-                                      )),
-                                      child: child,
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF2EEFF),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: const Color(0xFFE2D9FF),
-                                  width: 1.2,
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.person_outline_rounded,
-                                color: Color(0xFF2A233D),
-                                size: 22,
-                              ),
-                            ),
-                          ),
+                  toolbarHeight: 64,
+                  automaticallyImplyLeading: false,
+                  titleSpacing: 0,
+                  title: DashboardAppBarContent(
+                    onProfileTap: () => _scaffoldKey.currentState?.openDrawer(),
+                    onSearchTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text('Search — coming soon'),
                         ),
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                    onSparkleTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text('Featured — coming soon'),
+                        ),
+                      );
+                    },
+                  ),
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(1),
                     child: Container(height: 1, color: const Color(0xFFF0EDF8)),
@@ -281,6 +247,28 @@ class _DashboardScreenState extends State<DashboardScreen>
           onItemTap: (index) {
             if (index == 2) {
               CreatePostScreen.show(context);
+              return;
+            }
+            if (index == 4) {
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  transitionDuration: const Duration(milliseconds: 350),
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const ProfileScreen(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(1.0, 0.0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      )),
+                      child: child,
+                    );
+                  },
+                ),
+              );
               return;
             }
             setState(() {
@@ -688,10 +676,7 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               badgePulseController: widget.badgePulseController,
               showBadge: true,
             ),
-            _NavItem(
-              icon: Icons.edit_note_rounded,
-              activeIcon: Icons.edit_note_rounded,
-              label: 'Lekhak',
+            _ProfileNavItem(
               index: 4,
               selectedIndex: widget.selectedIndex,
               accent: widget.accent,
@@ -795,6 +780,64 @@ class _NavItem extends StatelessWidget {
     );
 
     return isWrappedInExpanded ? inner : Expanded(child: inner);
+  }
+}
+
+class _ProfileNavItem extends StatelessWidget {
+  const _ProfileNavItem({
+    required this.index,
+    required this.selectedIndex,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final int index;
+  final int selectedIndex;
+  final Color accent;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isActive = selectedIndex == index;
+    final Color itemColor = isActive ? accent : const Color(0xFF191725);
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => onTap(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: isActive ? const Color(0xFFF2EEFF) : const Color(0xFFF5F3FA),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: isActive ? accent.withValues(alpha: 0.45) : const Color(0xFFE2D9FF),
+                  width: 1.4,
+                ),
+              ),
+              child: Icon(
+                Icons.person_rounded,
+                size: 20,
+                color: isActive ? accent : const Color(0xFF2A233D),
+              ),
+            ),
+            const SizedBox(height: 4),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                color: itemColor,
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              ),
+              child: const Text('Profile'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

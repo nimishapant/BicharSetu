@@ -184,24 +184,27 @@ class _ProfileAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: _surface,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: const Text(
-              'BicharSetu',
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.arrow_back_rounded, color: _textDark, size: 26),
+            tooltip: 'Back to home',
+          ),
+          const Expanded(
+            child: Text(
+              'Profile',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: _textDark,
-                letterSpacing: 0.2,
               ),
             ),
           ),
-          const Spacer(),
           _IconBtn(icon: Icons.search_rounded, onTap: () {}),
-          const SizedBox(width: 6),
+          const SizedBox(width: 2),
           _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {}),
         ],
       ),
