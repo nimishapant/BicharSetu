@@ -7,6 +7,7 @@ import 'createpost_screen.dart';
 import 'dashboard_app_bar.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
+import 'search_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -159,7 +160,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         key: _scaffoldKey,
         drawer: const AppNavigationDrawer(),
         drawerEnableOpenDragGesture: true,
-        body: _selectedIndex == 3
+        body: _selectedIndex == 1
+            ? const SearchScreen(showBackButton: false)
+            : _selectedIndex == 3
             ? const NotificationScreen(showBackButton: false)
             : SafeArea(
           child: RefreshIndicator(
@@ -184,12 +187,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   title: DashboardAppBarContent(
                     onProfileTap: () => _scaffoldKey.currentState?.openDrawer(),
                     onSearchTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text('Search — coming soon'),
-                        ),
-                      );
+                      setState(() => _selectedIndex = 1);
                     },
                     onSparkleTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
