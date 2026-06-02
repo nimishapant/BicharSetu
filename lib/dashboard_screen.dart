@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'app_navigation_drawer.dart';
 import 'createpost_screen.dart';
 import 'dashboard_app_bar.dart';
+import 'model/post_model.dart';
 import 'notification_screen.dart';
 import 'profile_screen.dart';
+import 'repo/auth_service.dart';
 import 'search_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,100 +22,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   static const Color _accent = Color(0xFF6A3DE8);
 
-  final List<Map<String, dynamic>> _posts = [
-    {
-      'username': 'Ananya Sharma',
-      'time': '2 min ago',
-      'caption':
-          'Just finished reading "The Alchemist" for the third time. Every read hits differently. What book changed your perspective on life? 📚✨',
-      'likes': 142,
-      'comments': 38,
-      'shares': 12,
-      'hasImage': false,
-      'avatarColor': const Color(0xFF7C4DFF),
-    },
-    {
-      'username': 'Rohan Thapa',
-      'time': '15 min ago',
-      'caption':
-          'Sunrise hike to Nagarkot this morning — absolutely breathtaking view. Sometimes you just need to disconnect and let nature do the talking. 🌄',
-      'likes': 289,
-      'comments': 54,
-      'shares': 31,
-      'hasImage': true,
-      'avatarColor': const Color(0xFF00897B),
-      'imageStart': const Color(0xFFFF6F61),
-      'imageEnd': const Color(0xFFFF8F4C),
-    },
-    {
-      'username': 'Priya Koirala',
-      'time': '1 hr ago',
-      'caption':
-          'Hot take: learning to cook your own meals is the single most impactful life skill. Save money, eat healthier, impress everyone. 🍳',
-      'likes': 97,
-      'comments': 22,
-      'shares': 8,
-      'hasImage': false,
-      'avatarColor': const Color(0xFFE91E8C),
-    },
-    {
-      'username': 'Siddharth Rai',
-      'time': '2 hr ago',
-      'caption':
-          'Working on a new Flutter project — the widget tree is deep but the result is going to be worth it. Stay tuned! 🚀 #FlutterDev #MobileApp',
-      'likes': 204,
-      'comments': 47,
-      'shares': 19,
-      'hasImage': true,
-      'avatarColor': const Color(0xFF1565C0),
-      'imageStart': const Color(0xFF6A3DE8),
-      'imageEnd': const Color(0xFF9C6EFA),
-    },
-    {
-      'username': 'Meena Gurung',
-      'time': '3 hr ago',
-      'caption':
-          'Reminder: it\'s okay to rest. You don\'t have to earn your rest. Rest is not a reward, it\'s a necessity. Take care of yourselves 💛',
-      'likes': 521,
-      'comments': 83,
-      'shares': 64,
-      'hasImage': false,
-      'avatarColor': const Color(0xFFF57C00),
-    },
-    {
-      'username': 'Bikram Lama',
-      'time': '5 hr ago',
-      'caption':
-          'Kathmandu traffic at 8 AM vs Kathmandu traffic at 8:05 AM: no difference. But hey, at least the weather is perfect today! ☀️',
-      'likes': 376,
-      'comments': 91,
-      'shares': 43,
-      'hasImage': false,
-      'avatarColor': const Color(0xFF00796B),
-    },
-    {
-      'username': 'Samiksha Joshi',
-      'time': '7 hr ago',
-      'caption':
-          'Finally visited Pokhara after 2 years. Phewa lake in the evening is something else entirely. Nature > everything. 🏔️🌊',
-      'likes': 618,
-      'comments': 102,
-      'shares': 77,
-      'hasImage': true,
-      'avatarColor': const Color(0xFFAD1457),
-      'imageStart': const Color(0xFF26C6DA),
-      'imageEnd': const Color(0xFF00897B),
-    },
-  ];
   int _selectedIndex = 0;
   bool _isRefreshing = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final AnimationController _badgePulseController;
   late final AnimationController _fabPulseController;
+  late final Stream<List<PostModel>> _postsStream;
 
   @override
   void initState() {
     super.initState();
+    _postsStream = AuthService().getPostsStream();
     _badgePulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -134,8 +53,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   Future<void> _onRefresh() async {
     setState(() {
       _isRefreshing = true;
+      _postsStream = AuthService().getPostsStream();
     });
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
     setState(() {
       _isRefreshing = false;
@@ -203,35 +123,87 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Container(height: 1, color: const Color(0xFFF0EDF8)),
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                    child: _FeedHeader(isRefreshing: _isRefreshing),
+                  ),
+                ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 100),
-                  sliver: SliverList.builder(
-                    itemCount: _posts.isEmpty ? 2 : _posts.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return _FeedHeader(isRefreshing: _isRefreshing);
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: StreamBuilder<List<PostModel>>(
+                    stream: _postsStream,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const SliverFillRemaining(
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF6A3DE8),
+                            ),
+                          ),
+                        );
                       }
-                      if (_posts.isEmpty) {
-                        return const _EmptyFeedState();
+
+                      if (snapshot.hasError) {
+                        return SliverFillRemaining(
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.error_outline_rounded,
+                                      size: 40, color: Color(0xFF8B84A6)),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Could not load posts\n${snapshot.error}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Color(0xFF7D7892),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
                       }
-                      final post = _posts[index - 1];
-                      return TweenAnimationBuilder<double>(
-                        duration: Duration(milliseconds: 420 + (index * 70)),
-                        curve: Curves.easeOutCubic,
-                        tween: Tween(begin: 0, end: 1),
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(0, 18 * (1 - value)),
-                              child: child,
+
+                      final posts = snapshot.data ?? [];
+
+                      if (posts.isEmpty) {
+                        return const SliverToBoxAdapter(
+                          child: _EmptyFeedState(),
+                        );
+                      }
+
+                      return SliverList.builder(
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          final post = posts[index];
+                          return TweenAnimationBuilder<double>(
+                            duration: Duration(milliseconds: 420 + (index * 70)),
+                            curve: Curves.easeOutCubic,
+                            tween: Tween(begin: 0, end: 1),
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Transform.translate(
+                                  offset: Offset(0, 18 * (1 - value)),
+                                  child: child,
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 14),
+                              child: PostCard(
+                                post: post,
+                                accent: _accent,
+                              ),
                             ),
                           );
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: PostCard(post: post, accent: _accent),
-                        ),
                       );
                     },
                   ),
@@ -372,7 +344,7 @@ class _EmptyFeedState extends StatelessWidget {
 class PostCard extends StatefulWidget {
   const PostCard({super.key, required this.post, required this.accent});
 
-  final Map<String, dynamic> post;
+  final PostModel post;
   final Color accent;
 
   @override
@@ -380,13 +352,45 @@ class PostCard extends StatefulWidget {
 }
 
 class _PostCardState extends State<PostCard> {
-  bool _liked = false;
+  bool _likeInProgress = false;
+
+  bool get _liked {
+    final uid = AuthService().currentUid;
+    return uid != null && widget.post.likes.contains(uid);
+  }
+
+  /// Generate a consistent avatar color from the username
+  Color get _avatarColor {
+    final colors = [
+      const Color(0xFF7C4DFF),
+      const Color(0xFF00897B),
+      const Color(0xFFE91E8C),
+      const Color(0xFF1565C0),
+      const Color(0xFFF57C00),
+      const Color(0xFF00796B),
+      const Color(0xFFAD1457),
+      const Color(0xFF6A3DE8),
+    ];
+    final hash = widget.post.username.hashCode.abs();
+    return colors[hash % colors.length];
+  }
+
+  Future<void> _onLikeTap() async {
+    if (_likeInProgress) return;
+    _likeInProgress = true;
+    try {
+      await AuthService().toggleLike(widget.post.postId);
+    } catch (_) {}
+    _likeInProgress = false;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bool hasImage = widget.post['hasImage'] as bool;
-    final int baseLikes = widget.post['likes'] as int;
-    final int likes = _liked ? baseLikes + 1 : baseLikes;
+    final displayText = widget.post.title.isNotEmpty && widget.post.body.isNotEmpty
+        ? '${widget.post.title}\n\n${widget.post.body}'
+        : widget.post.title.isNotEmpty
+            ? widget.post.title
+            : widget.post.body;
 
     return Material(
       color: Colors.white,
@@ -406,13 +410,11 @@ class _PostCardState extends State<PostCard> {
               children: [
                 CircleAvatar(
                   radius: 21,
-                  backgroundColor: (widget.post['avatarColor'] as Color),
+                  backgroundColor: _avatarColor,
                   child: Text(
-                    (widget.post['username'] as String)
-                        .trim()
-                        .characters
-                        .first
-                        .toUpperCase(),
+                    widget.post.username.isNotEmpty
+                        ? widget.post.username.trim().characters.first.toUpperCase()
+                        : '?',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -426,7 +428,7 @@ class _PostCardState extends State<PostCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.post['username'] as String,
+                        widget.post.username,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -434,7 +436,7 @@ class _PostCardState extends State<PostCard> {
                         ),
                       ),
                       Text(
-                        widget.post['time'] as String,
+                        widget.post.timeAgo,
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -444,40 +446,52 @@ class _PostCardState extends State<PostCard> {
                     ],
                   ),
                 ),
+                if (widget.post.category.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0EAFF),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      widget.post.category.length > 15
+                          ? '${widget.post.category.substring(0, 15)}…'
+                          : widget.post.category,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6A3DE8),
+                      ),
+                    ),
+                  ),
+                const SizedBox(width: 6),
                 const Icon(Icons.more_horiz_rounded, color: Color(0xFF88839C)),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              widget.post['caption'] as String,
+              displayText,
               style: const TextStyle(
                 fontSize: 14.5,
                 color: Color(0xFF2F2A40),
                 height: 1.45,
               ),
             ),
-            if (hasImage) ...[
-              const SizedBox(height: 12),
-              Container(
-                height: 160,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      (widget.post['imageStart'] as Color),
-                      (widget.post['imageEnd'] as Color),
-                    ],
-                  ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.image_rounded,
-                    color: Colors.white70,
-                    size: 34,
-                  ),
-                ),
+            if (widget.post.keywords.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: widget.post.keywords.map((tag) {
+                  return Text(
+                    '#$tag',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6A3DE8),
+                    ),
+                  );
+                }).toList(),
               ),
             ],
             const SizedBox(height: 10),
@@ -487,26 +501,22 @@ class _PostCardState extends State<PostCard> {
                   icon: _liked
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
-                  label: '$likes',
+                  label: '${widget.post.likeCount}',
                   activeColor: widget.accent,
                   isActive: _liked,
-                  onTap: () {
-                    setState(() {
-                      _liked = !_liked;
-                    });
-                  },
+                  onTap: _onLikeTap,
                 ),
                 const SizedBox(width: 8),
                 _ActionChip(
                   icon: Icons.chat_bubble_outline_rounded,
-                  label: '${widget.post['comments']}',
+                  label: '${widget.post.commentCount}',
                   activeColor: widget.accent,
                   onTap: () {},
                 ),
                 const SizedBox(width: 8),
                 _ActionChip(
                   icon: Icons.send_rounded,
-                  label: '${widget.post['shares']}',
+                  label: '${widget.post.shareCount}',
                   activeColor: widget.accent,
                   onTap: () {},
                 ),

@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../firebase_options.dart';
+import '../model/post_model.dart';
 import '../model/user_model.dart';
 
 class AuthService {
@@ -21,8 +22,8 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   static const String _primaryBucket =
-      'bicharsetu-699d4.firebasestorage.app';
-  static const String _legacyBucket = 'bicharsetu-699d4.appspot.com';
+      'bicharsetu1.firebasestorage.app';
+  static const String _legacyBucket = 'bicharsetu1.appspot.com';
 
   FirebaseStorage _storageForBucket(String bucket) {
     return FirebaseStorage.instanceFor(
@@ -304,5 +305,61 @@ class AuthService {
     }
     return error?.message ??
         'Could not upload image. Please check Firebase Storage setup.';
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Posts — CRUD
+  // ─────────────────────────────────────────────────────────
+
+  /// Create a new post in the 'posts' collection.
+  Future<void> createPost(PostModel post) async {
+    await _firestore.collection('posts').doc(post.postId).set(post.toMap());
+  }
+
+  /// Stream of all posts ordered by creation time (newest first).
+  Stream<List<PostModel>> getPostsStream() {
+    return _firestore
+        .collection('posts')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return PostModel.fromMap(doc.data());
+      }).toList();
+    });
+  }
+
+  /// Toggle like for the current user on a post.
+  Future<void> toggleLike(String postId) async {
+    final uid = currentUid;
+    if (uid == null) return;
+
+    final docRef = _firestore.collection('posts').doc(postId);
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final likes = List<String>.from(doc.data()?['likes'] ?? []);
+
+    if (likes.contains(uid)) {
+      likes.remove(uid);
+    } else {
+      likes.add(uid);
+    }
+
+    await docRef.update({'likes': likes});
+  }
+
+  /// Delete a post (only if the current user is the author).
+  Future<void> deletePost(String postId) async {
+    final uid = currentUid;
+    if (uid == null) return;
+
+    final docRef = _firestore.collection('posts').doc(postId);
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    if (doc.data()?['uid'] == uid) {
+      await docRef.delete();
+    }
   }
 }
