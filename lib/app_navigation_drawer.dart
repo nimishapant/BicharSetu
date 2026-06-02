@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_settings_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
 import 'profile_screen.dart';
@@ -135,7 +136,15 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                   _DrawerTile(
                     icon: Icons.settings_outlined,
                     label: 'Settings and privacy',
-                    onTap: () => _showComingSoon('Settings and privacy'),
+                    onTap: () => _closeAndThen(() {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => AppSettingsScreen(
+                            username: _user?.username ?? 'aditya',
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                   _DrawerTile(
                     icon: Icons.help_outline_rounded,
