@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_settings_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
 import 'profile_screen.dart';
@@ -107,6 +108,7 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                   _DrawerProfileHeader(
                     displayName: _displayName,
                     handle: _handle,
+                    profilePhotoUrl: _user?.profilePhoto ?? '',
                     onProfileTap: () => _closeAndThen(() {
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -134,7 +136,15 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                   _DrawerTile(
                     icon: Icons.settings_outlined,
                     label: 'Settings and privacy',
-                    onTap: () => _showComingSoon('Settings and privacy'),
+                    onTap: () => _closeAndThen(() {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => AppSettingsScreen(
+                            username: _user?.username ?? 'aditya',
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                   _DrawerTile(
                     icon: Icons.help_outline_rounded,
@@ -178,12 +188,14 @@ class _DrawerProfileHeader extends StatelessWidget {
   const _DrawerProfileHeader({
     required this.displayName,
     required this.handle,
+    required this.profilePhotoUrl,
     required this.onProfileTap,
     required this.onAddAccount,
   });
 
   final String displayName;
   final String handle;
+  final String profilePhotoUrl;
   final VoidCallback onProfileTap;
   final VoidCallback onAddAccount;
 
@@ -205,11 +217,27 @@ class _DrawerProfileHeader extends StatelessWidget {
                 color: const Color(0xFFE8E8EC),
                 border: Border.all(color: const Color(0xFFD0D0D6), width: 1.5),
               ),
-              child: const Icon(
-                Icons.person_rounded,
-                size: 34,
-                color: Color(0xFFB8B4C0),
-              ),
+              child: profilePhotoUrl.isEmpty
+                  ? const Icon(
+                      Icons.person_rounded,
+                      size: 34,
+                      color: Color(0xFFB8B4C0),
+                    )
+                  : ClipOval(
+                      child: Image.network(
+                        profilePhotoUrl,
+                        fit: BoxFit.cover,
+                        width: 56,
+                        height: 56,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.person_rounded,
+                            size: 34,
+                            color: Color(0xFFB8B4C0),
+                          );
+                        },
+                      ),
+                    ),
             ),
             const SizedBox(width: 14),
             Expanded(

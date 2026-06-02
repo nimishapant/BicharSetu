@@ -119,6 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         final usernameDisplay = user?.username ?? 'Aditya';
         final emailDisplay = user?.email ?? 'adityasama98@gmail.com';
         final bioDisplay = user?.aboutMe ?? '';
+        final profilePhotoUrl = user?.profilePhoto ?? '';
         final joinedDisplay = user?.createdAt != null
             ? '${_getMonth(user!.createdAt!)} ${user.createdAt!.year}'
             : 'May 2026';
@@ -138,6 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         child: _ProfileHeader(
                           username: usernameDisplay,
                           displayName: usernameDisplay,
+                          profilePhotoUrl: profilePhotoUrl,
                         ),
                       ),
                       SliverToBoxAdapter(child: _StatsRow()),
@@ -239,10 +241,12 @@ class _IconBtn extends StatelessWidget {
 class _ProfileHeader extends StatelessWidget {
   final String username;
   final String displayName;
+  final String profilePhotoUrl;
 
   const _ProfileHeader({
     required this.username,
     required this.displayName,
+    required this.profilePhotoUrl,
   });
 
   @override
@@ -286,11 +290,27 @@ class _ProfileHeader extends StatelessWidget {
                       color: const Color(0xFFEDE8FB),
                       border: Border.all(color: _accent.withValues(alpha: 0.25), width: 2.5),
                     ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 44,
-                      color: Color(0xFFB0A8CC),
-                    ),
+                    child: profilePhotoUrl.isEmpty
+                        ? const Icon(
+                            Icons.person_rounded,
+                            size: 44,
+                            color: Color(0xFFB0A8CC),
+                          )
+                        : ClipOval(
+                            child: Image.network(
+                              profilePhotoUrl,
+                              fit: BoxFit.cover,
+                              width: 76,
+                              height: 76,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.person_rounded,
+                                  size: 44,
+                                  color: Color(0xFFB0A8CC),
+                                );
+                              },
+                            ),
+                          ),
                   ),
                   Positioned(
                     bottom: 0,

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'app_navigation_drawer.dart';
 import 'createpost_screen.dart';
 import 'dashboard_app_bar.dart';
+import 'notification_screen.dart';
 import 'profile_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -158,7 +159,9 @@ class _DashboardScreenState extends State<DashboardScreen>
         key: _scaffoldKey,
         drawer: const AppNavigationDrawer(),
         drawerEnableOpenDragGesture: true,
-        body: SafeArea(
+        body: _selectedIndex == 3
+            ? const NotificationScreen(showBackButton: false)
+            : SafeArea(
           child: RefreshIndicator(
             color: _accent,
             onRefresh: _onRefresh,

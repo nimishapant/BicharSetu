@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'model/user_model.dart';
+import 'repo/auth_service.dart';
 
 const Color _textDark = Color(0xFF1D1A29);
 const Color _accent = Color(0xFF6A3DE8);
@@ -89,29 +91,51 @@ class _HeaderProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFFE8E8EC),
-            border: Border.all(
-              color: const Color(0xFFE53935),
-              width: 2,
+    return StreamBuilder<UserModel?>(
+      stream: AuthService().currentUserModelStream,
+      builder: (context, snapshot) {
+        final photoUrl = snapshot.data?.profilePhoto ?? '';
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFE8E8EC),
+                border: Border.all(
+                  color: const Color(0xFFE53935),
+                  width: 2,
+                ),
+              ),
+              child: photoUrl.isEmpty
+                  ? const Icon(
+                      Icons.person_rounded,
+                      color: Color(0xFFB0A8B8),
+                      size: 26,
+                    )
+                  : ClipOval(
+                      child: Image.network(
+                        photoUrl,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            Icons.person_rounded,
+                            color: Color(0xFFB0A8B8),
+                            size: 26,
+                          );
+                        },
+                      ),
+                    ),
             ),
           ),
-          child: const Icon(
-            Icons.person_rounded,
-            color: Color(0xFFB0A8B8),
-            size: 26,
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
