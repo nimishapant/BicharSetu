@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Users collection ──
+    match /users/{userId} {
+      // Anyone (even unauthenticated users) can read profiles to check username during sign-up/sign-in
+      allow read: if true;
+
+      // Only the owner can create / update their own document
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Posts collection ──
+    match /posts/{postId} {
+      // Any signed-in user can read posts
+      allow read: if request.auth != null;
+
+      // Any signed-in user can create a post
+      allow create: if request.auth != null;
+
+      // Only the post author can update post content, but any authenticated user can toggle likes
+      allow update: if request.auth != null && (
+        resource.data.uid == request.auth.uid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+      );
+      allow delete: if request.auth != null
+                    && resource.data.uid == request.auth.uid;
+    }
+  }
+}

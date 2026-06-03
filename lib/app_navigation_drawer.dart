@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_settings_screen.dart';
+import 'diary_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
 import 'profile_screen.dart';
@@ -57,6 +58,18 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
         content: Text('$label — coming soon'),
       ),
     );
+  }
+
+  void _onExploreItemTap(_DrawerItem item) {
+    if (item.label == 'Diary') {
+      _closeAndThen(() {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const DiaryScreen()),
+        );
+      });
+      return;
+    }
+    _showComingSoon(item.label);
   }
 
   Future<void> _onSignOut() async {
@@ -127,7 +140,7 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                     (item) => _DrawerTile(
                       icon: item.icon,
                       label: item.label,
-                      onTap: () => _showComingSoon(item.label),
+                      onTap: () => _onExploreItemTap(item),
                     ),
                   ),
                   const SizedBox(height: 12),

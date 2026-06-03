@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import 'model/post_model.dart';
 import 'repo/auth_service.dart';
 
 const Color _bg = Color(0xFFF5F5F7);
@@ -45,6 +47,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _keywordsCtrl = TextEditingController();
 
   String _displayName = 'User';
+  String _userUid = '';
+  String _userProfilePhoto = '';
   int _selectedCategory = 0;
   bool _isPosting = false;
 
@@ -59,7 +63,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _loadUser() async {
     final user = await AuthService().getCurrentUserModel();
     if (!mounted || user == null) return;
-    setState(() => _displayName = user.username);
+    setState(() {
+      _displayName = user.username;
+      _userUid = user.uid;
+      _userProfilePhoto = user.profilePhoto;
+    });
   }
 
   void _onFieldsChanged() => setState(() {});
@@ -78,22 +86,59 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _onPost() async {
     if (!_canPost || _isPosting) return;
     setState(() => _isPosting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    setState(() => _isPosting = false);
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1D1A29),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        content: const Text(
-          'Post shared successfully!',
-          style: TextStyle(fontWeight: FontWeight.w600),
+
+    try {
+      final postId = const Uuid().v4();
+      final keywordsRaw = _keywordsCtrl.text.trim();
+      final keywords = keywordsRaw.isEmpty
+          ? <String>[]
+          : keywordsRaw.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
+
+      final post = PostModel(
+        postId: postId,
+        uid: _userUid,
+        username: _displayName,
+        profilePhoto: _userProfilePhoto,
+        title: _titleCtrl.text.trim(),
+        body: _bodyCtrl.text.trim(),
+        category: _categories[_selectedCategory],
+        keywords: keywords,
+        createdAt: DateTime.now(),
+      );
+
+      await AuthService().createPost(post);
+
+      if (!mounted) return;
+      setState(() => _isPosting = false);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF1D1A29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          content: const Text(
+            'Post shared successfully!',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPosting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          content: Text(
+            'Failed to post: $e',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+    }
   }
 
   @override
