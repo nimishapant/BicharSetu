@@ -18,30 +18,61 @@ class DiaryScreen extends StatefulWidget {
 }
 
 class _DiaryScreenState extends State<DiaryScreen> {
-  int _selectedTab = 0;
-  bool _isSearching = true;
+  int _selectedTab = 1;
+  int _selectedDayIndex = 3;
+  int _streakDays = 0;
+  bool _isSearchingPublic = false;
+  late final List<DateTime> _weekDates;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted) setState(() => _isSearching = false);
+    _weekDates = _buildWeekDates(DateTime.now());
+    _selectedDayIndex = _weekDates.indexWhere(
+      (d) =>
+          d.year == DateTime.now().year &&
+          d.month == DateTime.now().month &&
+          d.day == DateTime.now().day,
+    );
+    if (_selectedDayIndex < 0) _selectedDayIndex = 3;
+  }
+
+  List<DateTime> _buildWeekDates(DateTime anchor) {
+    final sunday = anchor.subtract(Duration(days: anchor.weekday % 7));
+    return List.generate(7, (i) => sunday.add(Duration(days: i)));
+  }
+
+  void _onTabChanged(int index) {
+    setState(() {
+      _selectedTab = index;
+      if (index == 0 && !_isSearchingPublic) {
+        _isSearchingPublic = true;
+        Future.delayed(const Duration(milliseconds: 1200), () {
+          if (mounted && _selectedTab == 0) {
+            setState(() => _isSearchingPublic = false);
+          }
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final isMyDiary = _selectedTab == 1;
+
     return Scaffold(
       backgroundColor: _surface,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: _DiaryFab(onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text('New diary entry — coming soon'),
-          ),
-        );
-      }),
+      floatingActionButton: _DiaryFab(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              behavior: SnackBarBehavior.floating,
+              content: Text('New diary entry — coming soon'),
+            ),
+          );
+        },
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -50,47 +81,105 @@ class _DiaryScreenState extends State<DiaryScreen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(child: _DiaryTabBar(
-                    selectedIndex: _selectedTab,
-                    onChanged: (i) => setState(() => _selectedTab = i),
-                  )),
-                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 5,
+                    child: _DiaryTabBar(
+                      selectedIndex: _selectedTab,
+                      onChanged: _onTabChanged,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (isMyDiary) _StreakBadge(days: _streakDays),
+                  if (isMyDiary) const SizedBox(width: 8),
                   _CalendarSquareButton(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text('Calendar — coming soon'),
-                        ),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _weekDates[_selectedDayIndex],
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2030),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: _accent,
+                                onPrimary: Colors.white,
+                                surface: _surface,
+                                onSurface: _textDark,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
                       );
+                      if (picked != null && mounted) {
+                        setState(() {
+                          _weekDates = _buildWeekDates(picked);
+                          _selectedDayIndex = _weekDates.indexWhere(
+                            (d) =>
+                                d.year == picked.year &&
+                                d.month == picked.month &&
+                                d.day == picked.day,
+                          );
+                          if (_selectedDayIndex < 0) _selectedDayIndex = 0;
+                        });
+                      }
                     },
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            _WeekDatePicker(
+              dates: _weekDates,
+              selectedIndex: _selectedDayIndex,
+              onSelected: (i) => setState(() => _selectedDayIndex = i),
+            ),
+            const SizedBox(height: 8),
             const Divider(height: 1, thickness: 1, color: _border),
             _FilterRow(
-              onDateTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    behavior: SnackBarBehavior.floating,
-                    content: Text('Date filter — coming soon'),
-                  ),
+              onDateTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _weekDates[_selectedDayIndex],
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                  builder: (context, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.light(
+                          primary: _accent,
+                          onPrimary: Colors.white,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
                 );
+                if (picked != null && mounted) {
+                  setState(() {
+                    _weekDates = _buildWeekDates(picked);
+                    _selectedDayIndex = _weekDates.indexWhere(
+                      (d) =>
+                          d.year == picked.year &&
+                          d.month == picked.month &&
+                          d.day == picked.day,
+                    );
+                    if (_selectedDayIndex < 0) _selectedDayIndex = 0;
+                  });
+                }
               },
             ),
             const Divider(height: 1, thickness: 1, color: _border),
             Expanded(
               child: Container(
                 color: _bg,
-                child: _isSearching
-                    ? const _DiaryEmptyState(searching: true)
-                    : _DiaryEmptyState(
-                        searching: false,
-                        isPublicTab: _selectedTab == 0,
-                      ),
+                child: _DiaryEmptyState(
+                  isMyDiary: isMyDiary,
+                  isSearching: !isMyDiary && _isSearchingPublic,
+                ),
               ),
             ),
           ],
@@ -145,6 +234,118 @@ class _DiaryAppBar extends StatelessWidget {
             onTap: () {},
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StreakBadge extends StatelessWidget {
+  const _StreakBadge({required this.days});
+
+  final int days;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _accent.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.local_fire_department_rounded,
+            size: 18,
+            color: days > 0 ? const Color(0xFFFF7043) : _textMid,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$days Day Streak',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: _textDark,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeekDatePicker extends StatelessWidget {
+  const _WeekDatePicker({
+    required this.dates,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<DateTime> dates;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  static const _weekdays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 64,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: dates.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final date = dates[index];
+          final selected = index == selectedIndex;
+          final weekday = _weekdays[date.weekday % 7];
+
+          return GestureDetector(
+            onTap: () => onSelected(index),
+            child: Container(
+              width: 48,
+              decoration: BoxDecoration(
+                color: selected ? _accent.withValues(alpha: 0.12) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    weekday,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? _accent : _textMid,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: selected ? _accent : Colors.transparent,
+                    ),
+                    child: Text(
+                      '${date.day}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: selected ? Colors.white : _textDark,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -253,7 +454,7 @@ class _TabChip extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: selected ? Colors.white : _textMid,
               ),
@@ -283,7 +484,7 @@ class _CalendarSquareButton extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _textDark.withValues(alpha: 0.15)),
+            border: Border.all(color: _textDark.withValues(alpha: 0.2), width: 1.5),
           ),
           child: const Icon(
             Icons.calendar_month_rounded,
@@ -356,67 +557,83 @@ class _FilterRow extends StatelessWidget {
 
 class _DiaryEmptyState extends StatelessWidget {
   const _DiaryEmptyState({
-    required this.searching,
-    this.isPublicTab = true,
+    required this.isMyDiary,
+    required this.isSearching,
   });
 
-  final bool searching;
-  final bool isPublicTab;
+  final bool isMyDiary;
+  final bool isSearching;
+
+  String get _title {
+    if (isSearching) return 'Searching Journals';
+    if (isMyDiary) return 'No entries found';
+    return 'No journals yet';
+  }
+
+  String? get _subtitle {
+    if (isSearching) return null;
+    if (isMyDiary) return 'Diary Empty Sub';
+    return 'Public diaries will appear here.';
+  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (searching)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 24),
-              child: SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: _accent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isSearching)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: _accent,
+                  ),
                 ),
               ),
-            ),
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFE8E8EC),
-              border: Border.all(color: const Color(0xFFD8D8DE), width: 1.5),
-            ),
-            child: const Icon(
-              Icons.menu_book_rounded,
-              size: 52,
-              color: _textDark,
-            ),
-          ),
-          const SizedBox(height: 22),
-          Text(
-            searching ? 'Searching Journals' : 'No journals yet',
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: _textMid,
-            ),
-          ),
-          if (!searching) ...[
-            const SizedBox(height: 8),
-            Text(
-              isPublicTab
-                  ? 'Public diaries will appear here.'
-                  : 'Tap + to write your first diary entry.',
-              style: const TextStyle(
-                fontSize: 14,
-                color: _textMid,
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFE8E8EC),
+                border: Border.all(color: const Color(0xFFD8D8DE), width: 1.5),
+              ),
+              child: const Icon(
+                Icons.menu_book_rounded,
+                size: 52,
+                color: _textDark,
               ),
             ),
+            const SizedBox(height: 22),
+            Text(
+              _title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isMyDiary && !isSearching ? 18 : 17,
+                fontWeight: FontWeight.w700,
+                color: isMyDiary && !isSearching ? _textDark : _textMid,
+              ),
+            ),
+            if (_subtitle != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _subtitle!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: _textMid,
+                  height: 1.35,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
