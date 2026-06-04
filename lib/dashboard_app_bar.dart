@@ -3,7 +3,6 @@ import 'model/user_model.dart';
 import 'repo/auth_service.dart';
 
 const Color _textDark = Color(0xFF1D1A29);
-const Color _accent = Color(0xFF6A3DE8);
 
 class DashboardAppBarContent extends StatelessWidget {
   const DashboardAppBarContent({
@@ -25,32 +24,12 @@ class DashboardAppBarContent extends StatelessWidget {
         children: [
           _HeaderProfileAvatar(onTap: onProfileTap),
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ClipOval(
-                  child: Image.asset(
-                    'assets/images/bichar_logo.png',
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      width: 32,
-                      height: 32,
-                      decoration: const BoxDecoration(
-                        color: _accent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit_note_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
+            child: Center(
+              child: Image.asset(
+                'assets/images/bichar_logo.png',
+                height: 36,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => const Text(
                   'BicharSetu',
                   style: TextStyle(
                     fontSize: 22,
@@ -59,7 +38,7 @@ class DashboardAppBarContent extends StatelessWidget {
                     letterSpacing: 0.3,
                   ),
                 ),
-              ],
+              ),
             ),
           ),
           IconButton(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'loginScreen.dart';
+import 'profileedit_screen.dart';
 import 'repo/auth_service.dart';
 
 const Color _bg = Color(0xFFF7F7FB);
@@ -56,11 +57,18 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final items = <_SettingItem>[
-      const _SettingItem(
+      _SettingItem(
         icon: Icons.person_outline_rounded,
         title: 'Your account',
         subtitle:
             'View and manage your account details, download a BicharSetu data archive, or manage account deactivation.',
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const ProfileEditScreen(),
+            ),
+          );
+        },
       ),
       const _SettingItem(
         icon: Icons.verified_user_outlined,
@@ -93,7 +101,7 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         trailing: Switch(
           value: _darkMode,
           onChanged: (value) => setState(() => _darkMode = value),
-          activeColor: const Color(0xFF6A3DE8),
+          activeThumbColor: const Color(0xFF6A3DE8),
         ),
       ),
       const _SettingItem(
@@ -229,12 +237,14 @@ class _SettingItem {
     required this.title,
     required this.subtitle,
     this.trailing,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget? trailing;
+  final VoidCallback? onTap;
 }
 
 class _SettingsTile extends StatelessWidget {
@@ -252,7 +262,10 @@ class _SettingsTile extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
+      child: InkWell(
+        onTap: item.onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -293,6 +306,7 @@ class _SettingsTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

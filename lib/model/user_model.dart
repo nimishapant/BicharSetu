@@ -7,6 +7,9 @@ class UserModel {
   final String aboutMe;
   final String profilePhoto;
   final String coverPhoto;
+  final String profession;
+  final String location;
+  final List<String> galleryPhotos;
   final DateTime? createdAt;
 
   UserModel({
@@ -16,10 +19,12 @@ class UserModel {
     this.aboutMe = '',
     this.profilePhoto = '',
     this.coverPhoto = '',
+    this.profession = '',
+    this.location = '',
+    this.galleryPhotos = const [],
     this.createdAt,
   });
 
-  // Convert to Map for saving to Firestore
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
@@ -28,11 +33,15 @@ class UserModel {
       'aboutMe': aboutMe,
       'profilePhoto': profilePhoto,
       'coverPhoto': coverPhoto,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'profession': profession,
+      'location': location,
+      'galleryPhotos': galleryPhotos,
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
     };
   }
 
-  // Create UserModel from Firestore Map
   factory UserModel.fromMap(Map<String, dynamic> map) {
     DateTime? createdTime;
     if (map['createdAt'] != null) {
@@ -50,11 +59,16 @@ class UserModel {
       aboutMe: map['aboutMe'] ?? '',
       profilePhoto: map['profilePhoto'] ?? '',
       coverPhoto: map['coverPhoto'] ?? '',
+      profession: map['profession'] ?? '',
+      location: map['location'] ?? '',
+      galleryPhotos: (map['galleryPhotos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       createdAt: createdTime,
     );
   }
 
-  // Create a copy with optional updated values
   UserModel copyWith({
     String? uid,
     String? username,
@@ -62,6 +76,9 @@ class UserModel {
     String? aboutMe,
     String? profilePhoto,
     String? coverPhoto,
+    String? profession,
+    String? location,
+    List<String>? galleryPhotos,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -71,6 +88,9 @@ class UserModel {
       aboutMe: aboutMe ?? this.aboutMe,
       profilePhoto: profilePhoto ?? this.profilePhoto,
       coverPhoto: coverPhoto ?? this.coverPhoto,
+      profession: profession ?? this.profession,
+      location: location ?? this.location,
+      galleryPhotos: galleryPhotos ?? this.galleryPhotos,
       createdAt: createdAt ?? this.createdAt,
     );
   }

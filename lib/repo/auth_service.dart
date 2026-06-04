@@ -158,6 +158,8 @@ class AuthService {
     required String username,
     required String email,
     required String aboutMe,
+    String? profession,
+    String? location,
   }) async {
     final User? user = _auth.currentUser;
     if (user == null) throw Exception('No user signed in');
@@ -180,6 +182,8 @@ class AuthService {
       'username': username.trim(),
       'email': email.trim(),
       'aboutMe': aboutMe.trim(),
+      if (profession != null) 'profession': profession.trim(),
+      if (location != null) 'location': location.trim(),
     });
 
     if (user.email != email.trim()) {
@@ -237,11 +241,32 @@ class AuthService {
     );
   }
 
+  Future<String> uploadGalleryPhotoFromXFile(XFile file) async {
+    final User? user = _auth.currentUser;
+    if (user == null) throw Exception('No user signed in');
+
+    final bytes = await file.readAsBytes();
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final url = await _uploadImage(
+      bytes: bytes,
+      storageFolder: 'gallery_photos',
+      fileName: fileName,
+      firestoreField: '',
+      skipFirestoreUpdate: true,
+    );
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'galleryPhotos': FieldValue.arrayUnion([url]),
+    });
+    return url;
+  }
+
   Future<String> _uploadImage({
     required Uint8List bytes,
     required String storageFolder,
     required String fileName,
     required String firestoreField,
+    bool skipFirestoreUpdate = false,
   }) async {
     final User? user = _auth.currentUser;
     if (user == null) throw Exception('No user signed in');
@@ -274,10 +299,12 @@ class AuthService {
         final snapshot = await ref.putData(bytes, metadata);
         final downloadUrl = await snapshot.ref.getDownloadURL();
 
-        await _firestore.collection('users').doc(user.uid).set(
-          {firestoreField: downloadUrl},
-          SetOptions(merge: true),
-        );
+        if (!skipFirestoreUpdate && firestoreField.isNotEmpty) {
+          await _firestore.collection('users').doc(user.uid).set(
+            {firestoreField: downloadUrl},
+            SetOptions(merge: true),
+          );
+        }
 
         return downloadUrl;
       } on FirebaseException catch (e) {
