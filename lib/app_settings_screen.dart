@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'loginScreen.dart';
 import 'profileedit_screen.dart';
 import 'repo/auth_service.dart';
+import 'security_settings_screen.dart';
 
 const Color _bg = Color(0xFFF7F7FB);
 const Color _surface = Colors.white;
@@ -76,11 +77,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         subtitle:
             'Check your current account standing and review any potential violations or restrictions.',
       ),
-      const _SettingItem(
+      _SettingItem(
         icon: Icons.lock_outline_rounded,
         title: 'Security and account access',
         subtitle:
             'Manage your account security, monitor active sessions, and control which apps have access to your profile.',
+        onTap: () => SecuritySettingsScreen.open(context),
       ),
       const _SettingItem(
         icon: Icons.workspace_premium_outlined,
