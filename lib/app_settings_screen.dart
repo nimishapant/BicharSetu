@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'loginScreen.dart';
 import 'profileedit_screen.dart';
 import 'repo/auth_service.dart';
+import 'premium_settings_screen.dart';
 import 'security_settings_screen.dart';
 
 const Color _bg = Color(0xFFF7F7FB);
@@ -84,11 +85,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             'Manage your account security, monitor active sessions, and control which apps have access to your profile.',
         onTap: () => SecuritySettingsScreen.open(context),
       ),
-      const _SettingItem(
+      _SettingItem(
         icon: Icons.workspace_premium_outlined,
         title: 'Premium',
         subtitle:
             'Manage your BicharSetu Pro features including AI Narration, extended story editing, and premium badges.',
+        onTap: () => PremiumSettingsScreen.open(context),
       ),
       const _SettingItem(
         icon: Icons.auto_awesome_outlined,
