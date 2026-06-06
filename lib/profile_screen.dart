@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'profileedit_screen.dart';
+import 'theme/bichar_theme_extension.dart';
 import 'repo/auth_service.dart';
 import 'model/user_model.dart';
 import 'loginScreen.dart';
@@ -9,7 +10,6 @@ import 'loginScreen.dart';
 // ─── Theme constants (matches dashboard_screen.dart) ────────────────────────
 const Color _accent = Color(0xFF6A3DE8);
 const Color _accentLight = Color(0xFF8B6EFF);
-const Color _bg = Color(0xFFF7F7FB);
 const Color _surface = Colors.white;
 const Color _textDark = Color(0xFF1D1A29);
 const Color _textMid = Color(0xFF7A7690);
@@ -124,13 +124,14 @@ class _ProfileScreenState extends State<ProfileScreen>
             ? '${_getMonth(user!.createdAt!)} ${user.createdAt!.year}'
             : 'May 2026';
 
+        final bichar = context.bichar;
         return Scaffold(
-          backgroundColor: _bg,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: SafeArea(
             child: Column(
               children: [
                 // ── App bar ──────────────────────────────────────────────────────
-                _ProfileAppBar(),
+                _ProfileAppBar(bichar: bichar),
                 // ── Scrollable body ──────────────────────────────────────────────
                 Expanded(
                   child: NestedScrollView(
@@ -140,11 +141,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                           username: usernameDisplay,
                           displayName: usernameDisplay,
                           profilePhotoUrl: profilePhotoUrl,
+                          bichar: bichar,
                         ),
                       ),
-                      SliverToBoxAdapter(child: _StatsRow()),
+                      SliverToBoxAdapter(child: _StatsRow(bichar: bichar)),
                       SliverToBoxAdapter(
-                        child: _BioSection(bio: bioDisplay),
+                        child: _BioSection(bio: bioDisplay, bichar: bichar),
                       ),
                       SliverToBoxAdapter(
                         child: _ActionRow(
@@ -156,6 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         child: _TabBar(
                           controller: _tabController,
                           selectedIndex: _selectedTab,
+                          bichar: bichar,
                         ),
                       ),
                     ],
@@ -182,32 +185,36 @@ class _ProfileScreenState extends State<ProfileScreen>
 // App Bar
 // ─────────────────────────────────────────────────────────────────────────────
 class _ProfileAppBar extends StatelessWidget {
+  const _ProfileAppBar({required this.bichar});
+
+  final BicharTheme bichar;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _surface,
+      color: bichar.cardBackground,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_rounded, color: _textDark, size: 26),
+            icon: Icon(Icons.arrow_back_rounded, color: bichar.textPrimary, size: 26),
             tooltip: 'Back to home',
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Profile',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _textDark,
+                color: bichar.textPrimary,
               ),
             ),
           ),
-          _IconBtn(icon: Icons.search_rounded, onTap: () {}),
+          _IconBtn(icon: Icons.search_rounded, onTap: () {}, bichar: bichar),
           const SizedBox(width: 2),
-          _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {}),
+          _IconBtn(icon: Icons.notifications_none_rounded, onTap: () {}, bichar: bichar),
         ],
       ),
     );
@@ -215,9 +222,14 @@ class _ProfileAppBar extends StatelessWidget {
 }
 
 class _IconBtn extends StatelessWidget {
-  const _IconBtn({required this.icon, required this.onTap});
+  const _IconBtn({
+    required this.icon,
+    required this.onTap,
+    required this.bichar,
+  });
   final IconData icon;
   final VoidCallback onTap;
+  final BicharTheme bichar;
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +240,7 @@ class _IconBtn extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(6),
-          child: Icon(icon, color: _textDark, size: 24),
+          child: Icon(icon, color: bichar.textPrimary, size: 24),
         ),
       ),
     );
@@ -242,17 +254,19 @@ class _ProfileHeader extends StatelessWidget {
   final String username;
   final String displayName;
   final String profilePhotoUrl;
+  final BicharTheme bichar;
 
   const _ProfileHeader({
     required this.username,
     required this.displayName,
     required this.profilePhotoUrl,
+    required this.bichar,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _surface,
+      color: bichar.cardBackground,
       padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
       child: Stack(
         children: [
@@ -265,7 +279,7 @@ class _ProfileHeader extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF2EEFF),
                 shape: BoxShape.circle,
-                border: Border.all(color: _border, width: 1.2),
+                border: Border.all(color: bichar.border, width: 1.2),
               ),
               child: const Icon(
                 Icons.camera_alt_outlined,
@@ -288,7 +302,7 @@ class _ProfileHeader extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: const Color(0xFFEDE8FB),
-                      border: Border.all(color: _accent.withValues(alpha: 0.25), width: 2.5),
+                      border: Border.all(color: bichar.accent.withValues(alpha: 0.25), width: 2.5),
                     ),
                     child: profilePhotoUrl.isEmpty
                         ? const Icon(
@@ -318,8 +332,8 @@ class _ProfileHeader extends StatelessWidget {
                     child: Container(
                       width: 24,
                       height: 24,
-                      decoration: const BoxDecoration(
-                        color: _accent,
+                      decoration: BoxDecoration(
+                        color: bichar.accent,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -338,18 +352,18 @@ class _ProfileHeader extends StatelessWidget {
                 children: [
                   Text(
                     displayName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: _textDark,
+                      color: bichar.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '@$username',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: _textMid,
+                      color: bichar.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -367,10 +381,14 @@ class _ProfileHeader extends StatelessWidget {
 // Stats Row
 // ─────────────────────────────────────────────────────────────────────────────
 class _StatsRow extends StatelessWidget {
+  const _StatsRow({required this.bichar});
+
+  final BicharTheme bichar;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _surface,
+      color: bichar.cardBackground,
       padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
       child: Row(
         children: const [
@@ -440,19 +458,20 @@ class _StatDivider extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 class _BioSection extends StatelessWidget {
   final String bio;
-  const _BioSection({required this.bio});
+  final BicharTheme bichar;
+  const _BioSection({required this.bio, required this.bichar});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: _surface,
+      color: bichar.cardBackground,
       padding: const EdgeInsets.fromLTRB(18, 4, 18, 14),
       child: Text(
         bio.isEmpty ? 'Add a bio to tell your story...' : bio,
         style: TextStyle(
           fontSize: 14,
-          color: _textMid,
+          color: bichar.textSecondary,
           fontStyle: bio.isEmpty ? FontStyle.italic : FontStyle.normal,
         ),
       ),
@@ -680,19 +699,24 @@ class _VerifiedBannerState extends State<_VerifiedBanner>
 // Custom Tab Bar
 // ─────────────────────────────────────────────────────────────────────────────
 class _TabBar extends StatelessWidget {
-  const _TabBar({required this.controller, required this.selectedIndex});
+  const _TabBar({
+    required this.controller,
+    required this.selectedIndex,
+    required this.bichar,
+  });
   final TabController controller;
   final int selectedIndex;
+  final BicharTheme bichar;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: _surface,
+      color: bichar.cardBackground,
       margin: const EdgeInsets.only(top: 10),
       child: TabBar(
         controller: controller,
-        labelColor: _accent,
-        unselectedLabelColor: _textMid,
+        labelColor: bichar.accent,
+        unselectedLabelColor: bichar.textSecondary,
         labelStyle: const TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 14,
@@ -701,10 +725,10 @@ class _TabBar extends StatelessWidget {
           fontWeight: FontWeight.w500,
           fontSize: 14,
         ),
-        indicatorColor: _accent,
+        indicatorColor: bichar.accent,
         indicatorWeight: 2.5,
         indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: _border,
+        dividerColor: bichar.border,
         tabs: const [
           Tab(text: 'Articles (0)'),
           Tab(text: 'Liked (0)'),

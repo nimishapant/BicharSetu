@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'app_navigation_drawer.dart';
+import 'theme/bichar_theme_extension.dart';
 import 'createpost_screen.dart';
 import 'dashboard_app_bar.dart';
 import 'model/post_model.dart';
@@ -20,8 +21,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
-  static const Color _accent = Color(0xFF6A3DE8);
-
   int _selectedIndex = 0;
   bool _isRefreshing = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -64,65 +63,55 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme.copyWith(
-      primary: _accent,
-      secondary: const Color(0xFF8B6EFF),
-      surface: Colors.white,
-    );
+    final bichar = context.bichar;
 
-    return Theme(
-      data: ThemeData.from(colorScheme: colorScheme).copyWith(
-        textTheme: theme.textTheme,
-        scaffoldBackgroundColor: const Color(0xFFF7F7FB),
-      ),
-      child: Scaffold(
-        key: _scaffoldKey,
-        drawer: const AppNavigationDrawer(),
-        drawerEnableOpenDragGesture: true,
-        body: _selectedIndex == 1
-            ? const SearchScreen(showBackButton: false)
-            : _selectedIndex == 3
-            ? const NotificationScreen(showBackButton: false)
-            : SafeArea(
-          child: RefreshIndicator(
-            color: _accent,
-            onRefresh: _onRefresh,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics(),
-              ),
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  floating: true,
-                  snap: true,
-                  backgroundColor: Colors.white,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                  toolbarHeight: 64,
-                  automaticallyImplyLeading: false,
-                  titleSpacing: 0,
-                  title: DashboardAppBarContent(
-                    onProfileTap: () => _scaffoldKey.currentState?.openDrawer(),
-                    onSearchTap: () {
-                      setState(() => _selectedIndex = 1);
-                    },
-                    onSparkleTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          behavior: SnackBarBehavior.floating,
-                          content: Text('Featured — coming soon'),
+    return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppNavigationDrawer(),
+      drawerEnableOpenDragGesture: true,
+      body: _selectedIndex == 1
+          ? const SearchScreen(showBackButton: false)
+          : _selectedIndex == 3
+              ? const NotificationScreen(showBackButton: false)
+              : SafeArea(
+                  child: RefreshIndicator(
+                    color: bichar.accent,
+                    onRefresh: _onRefresh,
+                    child: CustomScrollView(
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      slivers: [
+                        SliverAppBar(
+                          pinned: true,
+                          floating: true,
+                          snap: true,
+                          backgroundColor: bichar.cardBackground,
+                          surfaceTintColor: Colors.transparent,
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          toolbarHeight: 64,
+                          automaticallyImplyLeading: false,
+                          titleSpacing: 0,
+                          title: DashboardAppBarContent(
+                            onProfileTap: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
+                            onSearchTap: () {
+                              setState(() => _selectedIndex = 1);
+                            },
+                            onSparkleTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Featured — coming soon'),
+                                ),
+                              );
+                            },
+                          ),
+                          bottom: PreferredSize(
+                            preferredSize: const Size.fromHeight(1),
+                            child: Container(height: 1, color: bichar.border),
+                          ),
                         ),
-                      );
-                    },
-                  ),
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(1),
-                    child: Container(height: 1, color: const Color(0xFFF0EDF8)),
-                  ),
-                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -135,10 +124,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                     stream: _postsStream,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const SliverFillRemaining(
+                        return SliverFillRemaining(
                           child: Center(
                             child: CircularProgressIndicator(
-                              color: Color(0xFF6A3DE8),
+                              color: context.bichar.accent,
                             ),
                           ),
                         );
@@ -152,14 +141,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.error_outline_rounded,
-                                      size: 40, color: Color(0xFF8B84A6)),
+                                  Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 40,
+                                    color: context.bichar.textSecondary,
+                                  ),
                                   const SizedBox(height: 12),
                                   Text(
                                     'Could not load posts\n${snapshot.error}',
                                     textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      color: Color(0xFF7D7892),
+                                    style: TextStyle(
+                                      color: context.bichar.textSecondary,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -197,10 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             },
                             child: Padding(
                               padding: const EdgeInsets.only(bottom: 14),
-                              child: PostCard(
-                                post: post,
-                                accent: _accent,
-                              ),
+                              child: PostCard(post: post),
                             ),
                           );
                         },
@@ -212,12 +201,11 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
         ),
-        bottomNavigationBar: CustomBottomNav(
-          selectedIndex: _selectedIndex,
-          accent: _accent,
-          badgePulseController: _badgePulseController,
-          fabPulseController: _fabPulseController,
-          onItemTap: (index) {
+      bottomNavigationBar: CustomBottomNav(
+        selectedIndex: _selectedIndex,
+        badgePulseController: _badgePulseController,
+        fabPulseController: _fabPulseController,
+        onItemTap: (index) {
             if (index == 2) {
               CreatePostScreen.show(context);
               return;
@@ -247,8 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             setState(() {
               _selectedIndex = index;
             });
-          },
-        ),
+        },
       ),
     );
   }
@@ -261,33 +248,37 @@ class _FeedHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
-          const Text(
+          Text(
             'Today\'s Feed',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1D1A29),
+              color: bichar.textPrimary,
             ),
           ),
           const Spacer(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 260),
             child: isRefreshing
-                ? const SizedBox(
-                    key: ValueKey('refreshing'),
+                ? SizedBox(
+                    key: const ValueKey('refreshing'),
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: bichar.accent,
+                    ),
                   )
-                : const Text(
-                    key: ValueKey('idle'),
+                : Text(
+                    key: const ValueKey('idle'),
                     'Pull to refresh',
                     style: TextStyle(
-                      color: Color(0xFF7A7690),
+                      color: bichar.textSecondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -304,34 +295,39 @@ class _EmptyFeedState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(top: 4),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: bichar.cardBackground,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0EDF7)),
+        border: Border.all(color: bichar.border),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.dynamic_feed_outlined, size: 34, color: Color(0xFF8B84A6)),
-          SizedBox(height: 10),
+          Icon(
+            Icons.dynamic_feed_outlined,
+            size: 34,
+            color: bichar.textSecondary,
+          ),
+          const SizedBox(height: 10),
           Text(
             'No posts yet',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF2E2940),
+              color: bichar.textPrimary,
             ),
           ),
-          SizedBox(height: 6),
+          const SizedBox(height: 6),
           Text(
             'Pull down to refresh or tap + to add a new post.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF7D7892),
+              color: bichar.textSecondary,
               height: 1.4,
             ),
           ),
@@ -342,10 +338,9 @@ class _EmptyFeedState extends StatelessWidget {
 }
 
 class PostCard extends StatefulWidget {
-  const PostCard({super.key, required this.post, required this.accent});
+  const PostCard({super.key, required this.post});
 
   final PostModel post;
-  final Color accent;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -386,6 +381,8 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+    final accent = bichar.accent;
     final displayText = widget.post.title.isNotEmpty && widget.post.body.isNotEmpty
         ? '${widget.post.title}\n\n${widget.post.body}'
         : widget.post.title.isNotEmpty
@@ -393,14 +390,14 @@ class _PostCardState extends State<PostCard> {
             : widget.post.body;
 
     return Material(
-      color: Colors.white,
+      color: bichar.cardBackground,
       borderRadius: BorderRadius.circular(20),
-      elevation: 1.5,
-      shadowColor: const Color(0x1F6A3DE8),
+      elevation: context.isDarkMode ? 0 : 1.5,
+      shadowColor: accent.withValues(alpha: 0.12),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF0EDF7), width: 1),
+          border: Border.all(color: bichar.border, width: 1),
         ),
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
         child: Column(
@@ -429,18 +426,18 @@ class _PostCardState extends State<PostCard> {
                     children: [
                       Text(
                         widget.post.username,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1D1A29),
+                          color: bichar.textPrimary,
                         ),
                       ),
                       Text(
                         widget.post.timeAgo,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: Color(0xFF7E7A93),
+                          color: bichar.textSecondary,
                         ),
                       ),
                     ],
@@ -450,30 +447,30 @@ class _PostCardState extends State<PostCard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF0EAFF),
+                      color: bichar.chipBackground,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       widget.post.category.length > 15
                           ? '${widget.post.category.substring(0, 15)}…'
                           : widget.post.category,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF6A3DE8),
+                        color: accent,
                       ),
                     ),
                   ),
                 const SizedBox(width: 6),
-                const Icon(Icons.more_horiz_rounded, color: Color(0xFF88839C)),
+                Icon(Icons.more_horiz_rounded, color: bichar.mutedIcon),
               ],
             ),
             const SizedBox(height: 12),
             Text(
               displayText,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
-                color: Color(0xFF2F2A40),
+                color: bichar.textPrimary,
                 height: 1.45,
               ),
             ),
@@ -485,10 +482,10 @@ class _PostCardState extends State<PostCard> {
                 children: widget.post.keywords.map((tag) {
                   return Text(
                     '#$tag',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF6A3DE8),
+                      color: accent,
                     ),
                   );
                 }).toList(),
@@ -502,7 +499,7 @@ class _PostCardState extends State<PostCard> {
                       ? Icons.favorite_rounded
                       : Icons.favorite_border_rounded,
                   label: '${widget.post.likeCount}',
-                  activeColor: widget.accent,
+                  activeColor: accent,
                   isActive: _liked,
                   onTap: _onLikeTap,
                 ),
@@ -510,14 +507,14 @@ class _PostCardState extends State<PostCard> {
                 _ActionChip(
                   icon: Icons.chat_bubble_outline_rounded,
                   label: '${widget.post.commentCount}',
-                  activeColor: widget.accent,
+                  activeColor: accent,
                   onTap: () {},
                 ),
                 const SizedBox(width: 8),
                 _ActionChip(
                   icon: Icons.send_rounded,
                   label: '${widget.post.shareCount}',
-                  activeColor: widget.accent,
+                  activeColor: accent,
                   onTap: () {},
                 ),
               ],
@@ -546,8 +543,10 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+    final idleColor = bichar.textSecondary;
     return Material(
-      color: isActive ? const Color(0xFFF0EAFF) : const Color(0xFFF8F7FC),
+      color: isActive ? bichar.chipBackground : bichar.searchFieldBackground,
       borderRadius: BorderRadius.circular(30),
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
@@ -559,7 +558,7 @@ class _ActionChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 17,
-                color: isActive ? activeColor : const Color(0xFF706C85),
+                color: isActive ? activeColor : idleColor,
               ),
               const SizedBox(width: 5),
               Text(
@@ -567,7 +566,7 @@ class _ActionChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
-                  color: isActive ? activeColor : const Color(0xFF706C85),
+                  color: isActive ? activeColor : idleColor,
                 ),
               ),
             ],
@@ -582,14 +581,12 @@ class CustomBottomNav extends StatefulWidget {
   const CustomBottomNav({
     super.key,
     required this.selectedIndex,
-    required this.accent,
     required this.badgePulseController,
     required this.fabPulseController,
     required this.onItemTap,
   });
 
   final int selectedIndex;
-  final Color accent;
   final AnimationController badgePulseController;
   final AnimationController fabPulseController;
   final ValueChanged<int> onItemTap;
@@ -603,17 +600,18 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return SafeArea(
       top: false,
       child: Container(
         height: 96,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: bichar.cardBackground,
           boxShadow: [
             BoxShadow(
-              color: Color(0x1A241A44),
+              color: Colors.black.withValues(alpha: context.isDarkMode ? 0.35 : 0.1),
               blurRadius: 18,
-              offset: Offset(0, -3),
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -625,7 +623,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               label: 'Home',
               index: 0,
               selectedIndex: widget.selectedIndex,
-              accent: widget.accent,
               onTap: widget.onItemTap,
             ),
             Expanded(
@@ -656,7 +653,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
                     label: 'Search',
                     index: 1,
                     selectedIndex: widget.selectedIndex,
-                    accent: widget.accent,
                     onTap: (_) {},
                     isWrappedInExpanded: true,
                   ),
@@ -670,7 +666,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
                 children: [
                   AnimatedAddButton(
                     controller: widget.fabPulseController,
-                    accent: widget.accent,
                     onTap: () => widget.onItemTap(2),
                   ),
                 ],
@@ -682,7 +677,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
               label: 'Notifications',
               index: 3,
               selectedIndex: widget.selectedIndex,
-              accent: widget.accent,
               onTap: widget.onItemTap,
               badgePulseController: widget.badgePulseController,
               showBadge: true,
@@ -690,7 +684,6 @@ class _CustomBottomNavState extends State<CustomBottomNav> {
             _ProfileNavItem(
               index: 4,
               selectedIndex: widget.selectedIndex,
-              accent: widget.accent,
               onTap: widget.onItemTap,
             ),
           ],
@@ -707,7 +700,6 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.index,
     required this.selectedIndex,
-    required this.accent,
     required this.onTap,
     this.showBadge = false,
     this.badgePulseController,
@@ -719,7 +711,6 @@ class _NavItem extends StatelessWidget {
   final String label;
   final int index;
   final int selectedIndex;
-  final Color accent;
   final ValueChanged<int> onTap;
   final bool showBadge;
   final AnimationController? badgePulseController;
@@ -727,8 +718,10 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     final bool isActive = selectedIndex == index;
-    final Color itemColor = isActive ? accent : const Color(0xFF191725);
+    final Color itemColor =
+        isActive ? bichar.accent : bichar.textPrimary;
 
     final inner = InkWell(
       onTap: () => onTap(index),
@@ -798,19 +791,19 @@ class _ProfileNavItem extends StatelessWidget {
   const _ProfileNavItem({
     required this.index,
     required this.selectedIndex,
-    required this.accent,
     required this.onTap,
   });
 
   final int index;
   final int selectedIndex;
-  final Color accent;
   final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     final bool isActive = selectedIndex == index;
-    final Color itemColor = isActive ? accent : const Color(0xFF191725);
+    final Color itemColor =
+        isActive ? bichar.accent : bichar.textPrimary;
 
     return Expanded(
       child: InkWell(
@@ -822,17 +815,21 @@ class _ProfileNavItem extends StatelessWidget {
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                color: isActive ? const Color(0xFFF2EEFF) : const Color(0xFFF5F3FA),
+                color: isActive
+                    ? bichar.chipBackground
+                    : bichar.searchFieldBackground,
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(
-                  color: isActive ? accent.withValues(alpha: 0.45) : const Color(0xFFE2D9FF),
+                  color: isActive
+                      ? bichar.accent.withValues(alpha: 0.45)
+                      : bichar.border,
                   width: 1.4,
                 ),
               ),
               child: Icon(
                 Icons.person_rounded,
                 size: 20,
-                color: isActive ? accent : const Color(0xFF2A233D),
+                color: isActive ? bichar.accent : bichar.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -856,16 +853,15 @@ class AnimatedAddButton extends StatelessWidget {
   const AnimatedAddButton({
     super.key,
     required this.controller,
-    required this.accent,
     required this.onTap,
   });
 
   final AnimationController controller;
-  final Color accent;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final accent = context.bichar.accent;
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {

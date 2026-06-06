@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'model/user_model.dart';
 import 'repo/auth_service.dart';
-
-const Color _textDark = Color(0xFF1D1A29);
+import 'theme/bichar_theme_extension.dart';
 
 class DashboardAppBarContent extends StatelessWidget {
   const DashboardAppBarContent({
@@ -18,6 +17,7 @@ class DashboardAppBarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -29,12 +29,12 @@ class DashboardAppBarContent extends StatelessWidget {
                 'assets/images/bichar_logo.png',
                 height: 36,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Text(
+                errorBuilder: (context, error, stackTrace) => Text(
                   'BicharSetu',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: _textDark,
+                    color: bichar.textPrimary,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -43,7 +43,7 @@ class DashboardAppBarContent extends StatelessWidget {
           ),
           IconButton(
             onPressed: onSearchTap,
-            icon: const Icon(Icons.search_rounded, color: _textDark, size: 26),
+            icon: Icon(Icons.search_rounded, color: bichar.textPrimary, size: 26),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           ),

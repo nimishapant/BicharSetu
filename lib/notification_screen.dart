@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme/bichar_theme_extension.dart';
 
 const Color _bg = Color(0xFFF7F7FB);
 const Color _surface = Colors.white;
@@ -15,7 +16,7 @@ class NotificationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _surface,
+      backgroundColor: context.bichar.cardBackground,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -40,7 +41,7 @@ class NotificationScreen extends StatelessWidget {
             ),
             Expanded(
               child: Container(
-                color: _bg,
+                color: Theme.of(context).scaffoldBackgroundColor,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: Container(
                   decoration: BoxDecoration(

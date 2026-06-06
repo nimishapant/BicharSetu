@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Theme — aligned with diary_screen / dashboard
-const Color _accent = Color(0xFF6A3DE8);
-const Color _accentLight = Color(0xFF8B6EFF);
-const Color _bg = Color(0xFFF7F7FB);
-const Color _surface = Colors.white;
-const Color _textDark = Color(0xFF1D1A29);
-const Color _textMid = Color(0xFF7A7690);
-const Color _border = Color(0xFFF0EDF7);
+import 'theme/bichar_theme_extension.dart';
 
 /// Local book entry — no backend; [image] is a placeholder key (e.g. `picture1`).
 class BookItem {
@@ -187,7 +180,7 @@ class _BooksScreenState extends State<BooksScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      backgroundColor: _surface,
+      backgroundColor: context.bichar.cardBackground,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -234,8 +227,10 @@ class _BooksScreenState extends State<BooksScreen> {
                 ? 2
                 : 1;
 
+    final bichar = context.bichar;
+
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -308,22 +303,22 @@ class _BooksScreenState extends State<BooksScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Nepali Classics',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w800,
-                                    color: _textDark,
+                                    color: bichar.textPrimary,
                                   ),
                                 ),
                               ),
                               Text(
                                 '${filtered.length} book${filtered.length == 1 ? '' : 's'}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: _textMid,
+                                  color: bichar.textSecondary,
                                 ),
                               ),
                             ],
@@ -403,24 +398,25 @@ class _BooksAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Container(
-      color: _surface,
+      color: bichar.cardBackground,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back_rounded, color: _textDark, size: 26),
+            icon: Icon(Icons.arrow_back_rounded, color: bichar.textPrimary, size: 26),
             tooltip: 'Back',
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Books',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: _textDark,
+                color: bichar.textPrimary,
               ),
             ),
           ),
@@ -428,12 +424,11 @@ class _BooksAppBar extends StatelessWidget {
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  behavior: SnackBarBehavior.floating,
                   content: Text('Book search is available below'),
                 ),
               );
             },
-            icon: const Icon(Icons.search_rounded, color: _textDark, size: 26),
+            icon: Icon(Icons.search_rounded, color: bichar.textPrimary, size: 26),
           ),
         ],
       ),
@@ -446,6 +441,7 @@ class _BooksWelcomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -455,8 +451,8 @@ class _BooksWelcomeHeader extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [_accent, _accentLight],
+                gradient: LinearGradient(
+                  colors: [bichar.accent, bichar.accentLight],
                 ),
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -467,7 +463,7 @@ class _BooksWelcomeHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -476,16 +472,16 @@ class _BooksWelcomeHeader extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: _textDark,
+                      color: bichar.textPrimary,
                       height: 1.15,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     'Discover timeless Nepali literature',
                     style: TextStyle(
                       fontSize: 14,
-                      color: _textMid,
+                      color: bichar.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -510,16 +506,17 @@ class _BooksSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return TextField(
       controller: controller,
       textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: 'Search books or authors...',
-        hintStyle: const TextStyle(
-          color: Color(0xFF8D90A0),
+        hintStyle: TextStyle(
+          color: bichar.textSecondary,
           fontWeight: FontWeight.w500,
         ),
-        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8D90A0)),
+        prefixIcon: Icon(Icons.search_rounded, color: bichar.mutedIcon),
         suffixIcon: ValueListenableBuilder<TextEditingValue>(
           valueListenable: controller,
           builder: (context, value, _) {
@@ -531,19 +528,19 @@ class _BooksSearchField extends StatelessWidget {
           },
         ),
         filled: true,
-        fillColor: _surface,
+        fillColor: bichar.cardBackground,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: _border),
+          borderSide: BorderSide(color: bichar.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: _border),
+          borderSide: BorderSide(color: bichar.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: _accent, width: 1.5),
+          borderSide: BorderSide(color: bichar.accent, width: 1.5),
         ),
       ),
     );
@@ -563,6 +560,7 @@ class _GenreFilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return SizedBox(
       height: 40,
       child: ListView.separated(
@@ -580,12 +578,12 @@ class _GenreFilterRow extends StatelessWidget {
             labelStyle: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : _textMid,
+              color: isSelected ? Colors.white : bichar.textSecondary,
             ),
-            selectedColor: _accent,
-            backgroundColor: _surface,
+            selectedColor: bichar.accent,
+            backgroundColor: bichar.cardBackground,
             side: BorderSide(
-              color: isSelected ? _accent : _border,
+              color: isSelected ? bichar.accent : bichar.border,
             ),
             onSelected: (_) => onSelected(genre),
           );
@@ -606,6 +604,7 @@ class _FeaturedBookCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -613,15 +612,15 @@ class _FeaturedBookCard extends StatelessWidget {
         onTap: onTap,
         child: Ink(
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF5B35D5), _accent, _accentLight],
+            gradient: LinearGradient(
+              colors: [const Color(0xFF5B35D5), bichar.accent, bichar.accentLight],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: _accent.withValues(alpha: 0.28),
+                color: bichar.accent.withValues(alpha: 0.28),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -824,8 +823,9 @@ class _BookGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Material(
-      color: _surface,
+      color: bichar.cardBackground,
       elevation: 0,
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
@@ -834,7 +834,7 @@ class _BookGridCard extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: _border),
+            border: Border.all(color: bichar.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -869,10 +869,10 @@ class _BookGridCard extends StatelessWidget {
                         book.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: _textDark,
+                          color: bichar.textPrimary,
                           height: 1.25,
                         ),
                       ),
@@ -881,9 +881,9 @@ class _BookGridCard extends StatelessWidget {
                         book.author,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: _textMid,
+                          color: bichar.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -894,17 +894,17 @@ class _BookGridCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF2EEFF),
+                          color: bichar.chipBackground,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           book.genre,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: _accent,
+                            color: bichar.accent,
                           ),
                         ),
                       ),
@@ -933,8 +933,9 @@ class _BookListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Material(
-      color: _surface,
+      color: bichar.cardBackground,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -942,7 +943,7 @@ class _BookListTile extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _border),
+            border: Border.all(color: bichar.border),
           ),
           padding: const EdgeInsets.all(12),
           child: Row(
@@ -959,18 +960,18 @@ class _BookListTile extends StatelessWidget {
                   children: [
                     Text(
                       book.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: _textDark,
+                        color: bichar.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       book.author,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: _textMid,
+                        color: bichar.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -987,7 +988,7 @@ class _BookListTile extends StatelessWidget {
               ),
               Icon(
                 isSaved ? Icons.bookmark_rounded : Icons.chevron_right_rounded,
-                color: isSaved ? _accent : _textMid,
+                color: isSaved ? bichar.accent : bichar.textSecondary,
               ),
             ],
           ),
@@ -1004,18 +1005,19 @@ class _MetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2EEFF),
+        color: bichar.chipBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: _accent,
+          color: bichar.accent,
         ),
       ),
     );
@@ -1035,6 +1037,7 @@ class _BookDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     final bottom = MediaQuery.paddingOf(context).bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 8, 24, 24 + bottom),
@@ -1057,19 +1060,19 @@ class _BookDetailSheet extends StatelessWidget {
                   children: [
                     Text(
                       book.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: _textDark,
+                        color: bichar.textPrimary,
                         height: 1.2,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       book.author,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: _textMid,
+                        color: bichar.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1091,9 +1094,9 @@ class _BookDetailSheet extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             book.description,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: _textMid,
+              color: bichar.textSecondary,
               height: 1.5,
               fontWeight: FontWeight.w500,
             ),
@@ -1107,21 +1110,14 @@ class _BookDetailSheet extends StatelessWidget {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        behavior: SnackBarBehavior.floating,
-                        content: Text('Opening "${book.title}" — reader coming soon'),
+                        content: Text(
+                          'Opening "${book.title}" — reader coming soon',
+                        ),
                       ),
                     );
                   },
                   icon: const Icon(Icons.play_arrow_rounded),
                   label: const Text('Start Reading'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _accent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1145,6 +1141,7 @@ class _BooksEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
       child: Column(
@@ -1153,26 +1150,30 @@ class _BooksEmptyState extends StatelessWidget {
           Container(
             width: 72,
             height: 72,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF2EEFF),
+            decoration: BoxDecoration(
+              color: bichar.chipBackground,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.menu_book_outlined, size: 34, color: _accent),
+            child: Icon(Icons.menu_book_outlined, size: 34, color: bichar.accent),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No books found',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: _textDark,
+              color: bichar.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Try a different search term or genre filter.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: _textMid, height: 1.4),
+            style: TextStyle(
+              fontSize: 14,
+              color: bichar.textSecondary,
+              height: 1.4,
+            ),
           ),
         ],
       ),

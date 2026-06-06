@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme/bichar_theme_extension.dart';
 
 const Color _accent = Color(0xFF6A3DE8);
 const Color _accentDark = Color(0xFF4A2BB8);
@@ -61,7 +62,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
     final isMyDiary = _selectedTab == 1;
 
     return Scaffold(
-      backgroundColor: _surface,
+      backgroundColor: context.bichar.cardBackground,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: _DiaryFab(
         onTap: () {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_settings_screen.dart';
+import 'theme/bichar_theme_extension.dart';
 import 'books.dart';
 import 'diary_screen.dart';
 import 'loginScreen.dart';
@@ -122,9 +123,10 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.82,
-      backgroundColor: _drawerBg,
+      backgroundColor: bichar.drawerBackground,
       elevation: 8,
       shadowColor: Colors.black26,
       child: SafeArea(
