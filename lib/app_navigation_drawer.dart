@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_settings_screen.dart';
+import 'books.dart';
 import 'diary_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
@@ -71,6 +72,14 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
       _closeAndThen(() {
         Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => const DiaryScreen()),
+        );
+      });
+      return;
+    }
+    if (item.label == 'Books') {
+      _closeAndThen(() {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const BooksScreen()),
         );
       });
       return;
