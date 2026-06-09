@@ -7,11 +7,12 @@ import 'loginScreen.dart';
 import 'model/user_model.dart';
 import 'profile_screen.dart';
 import 'repo/auth_service.dart';
+import 'widgets/drawer/drawer_menu_item.dart';
+import 'widgets/drawer/drawer_profile_header.dart';
+import 'widgets/drawer/drawer_sign_out_button.dart';
 
-const Color _drawerBg = Color(0xFFF3F3F5);
 const Color _textDark = Color(0xFF1D1A29);
 const Color _textMid = Color(0xFF7A7690);
-const Color _divider = Color(0xFFE4E4E8);
 
 // Help Center palette (aligned with app settings / Material 3 surfaces)
 const Color _helpBg = Color(0xFFF7F7FB);
@@ -89,22 +90,32 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
   }
 
   Future<void> _onSignOut() async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: Icon(Icons.logout_rounded, color: colorScheme.error, size: 28),
         title: const Text('Sign out'),
-        content: const Text('Are you sure you want to sign out?'),
+        content: const Text(
+          'Are you sure you want to sign out of your account?',
+        ),
+        actionsAlignment: MainAxisAlignment.end,
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text(
-              'Sign out',
-              style: TextStyle(color: Colors.redAccent),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Sign out'),
           ),
         ],
       ),
@@ -121,86 +132,137 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
     );
   }
 
+  double _drawerWidth(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= 1200) return 360;
+    if (width >= 800) return 340;
+    return width * 0.86;
+  }
+
+  void _openProfile() => _closeAndThen(() {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
+        );
+      });
+
   @override
   Widget build(BuildContext context) {
     final bichar = context.bichar;
+    final horizontalPadding = MediaQuery.sizeOf(context).width >= 800 ? 20.0 : 16.0;
+
     return Drawer(
-      width: MediaQuery.sizeOf(context).width * 0.82,
+      width: _drawerWidth(context),
       backgroundColor: bichar.drawerBackground,
-      elevation: 8,
-      shadowColor: Colors.black26,
+      elevation: 12,
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+      ),
       child: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            ? Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: bichar.accent,
+                ),
+              )
+            : Column(
                 children: [
-                  _DrawerProfileHeader(
-                    displayName: _displayName,
-                    handle: _handle,
-                    profilePhotoUrl: _user?.profilePhoto ?? '',
-                    onProfileTap: () => _closeAndThen(() {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const ProfileScreen(),
+                  // Scrollable navigation body — profile + grouped sections.
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        12,
+                        horizontalPadding,
+                        8,
+                      ),
+                      children: [
+                        DrawerProfileHeader(
+                          displayName: _displayName,
+                          handle: _handle,
+                          profilePhotoUrl: _user?.profilePhoto ?? '',
+                          onProfileTap: _openProfile,
+                          onEditProfile: _openProfile,
+                          onAddAccount: () => _showComingSoon('Add account'),
                         ),
-                      );
-                    }),
-                    onAddAccount: () => _showComingSoon('Add account'),
-                  ),
-                  const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 1, color: _divider),
-                  const SizedBox(height: 12),
-                  const _SectionLabel('EXPLORE'),
-                  const SizedBox(height: 4),
-                  ..._exploreItems.map(
-                    (item) => _DrawerTile(
-                      icon: item.icon,
-                      label: item.label,
-                      onTap: () => _onExploreItemTap(item),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1, thickness: 1, color: _divider),
-                  const SizedBox(height: 8),
-                  _DrawerTile(
-                    icon: Icons.settings_outlined,
-                    label: 'Settings and privacy',
-                    onTap: () => _closeAndThen(() {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => AppSettingsScreen(
-                            username: _user?.username ?? 'aditya',
+                        const SizedBox(height: 20),
+                        const DrawerSectionHeader(
+                          title: 'Explore',
+                          icon: Icons.explore_outlined,
+                        ),
+                        ..._exploreItems.map(
+                          (item) => DrawerMenuItem(
+                            icon: item.icon,
+                            label: item.label,
+                            onTap: () => _onExploreItemTap(item),
                           ),
                         ),
-                      );
-                    }),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.help_outline_rounded,
-                    label: 'Help Center',
-                    onTap: () => _closeAndThen(() {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const HelpCenterScreen(),
+                        const SizedBox(height: 10),
+                        const DrawerSectionHeader(
+                          title: 'Community',
+                          icon: Icons.groups_outlined,
                         ),
-                      );
-                    }),
+                        ..._communityItems.map(
+                          (item) => DrawerMenuItem(
+                            icon: item.icon,
+                            label: item.label,
+                            onTap: () => _onCommunityItemTap(item),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const DrawerSectionHeader(
+                          title: 'Settings',
+                          icon: Icons.tune_rounded,
+                        ),
+                        DrawerMenuItem(
+                          icon: Icons.settings_outlined,
+                          label: 'Settings and privacy',
+                          onTap: () => _closeAndThen(() {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => AppSettingsScreen(
+                                  username: _user?.username ?? 'aditya',
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        DrawerMenuItem(
+                          icon: Icons.help_outline_rounded,
+                          label: 'Help Center',
+                          onTap: () => _closeAndThen(() {
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const HelpCenterScreen(),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 1, color: _divider),
-                  const SizedBox(height: 8),
-                  _DrawerTile(
-                    icon: Icons.logout_rounded,
-                    label: 'Sign out',
-                    iconColor: Colors.redAccent,
-                    labelColor: Colors.redAccent,
-                    onTap: _onSignOut,
+                  // Sign out stays pinned to the bottom for quick, safe access.
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      8,
+                      horizontalPadding,
+                      16,
+                    ),
+                    child: DrawerSignOutButton(onPressed: _onSignOut),
                   ),
                 ],
               ),
       ),
     );
+  }
+
+  void _onCommunityItemTap(_DrawerItem item) {
+    _showComingSoon(item.label);
   }
 }
 
@@ -1047,216 +1109,15 @@ class _DrawerItem {
 const List<_DrawerItem> _exploreItems = [
   _DrawerItem(icon: Icons.bookmark_border_rounded, label: 'Saved Posts'),
   _DrawerItem(icon: Icons.article_outlined, label: 'Articles'),
-  _DrawerItem(icon: Icons.menu_book_outlined, label: 'Books'),
-  _DrawerItem(icon: Icons.auto_stories_outlined, label: 'Diary'),
-  _DrawerItem(icon: Icons.visibility_off_outlined, label: 'Manage Confessions'),
+  _DrawerItem(icon: Icons.menu_book_rounded, label: 'Books'),
+  _DrawerItem(icon: Icons.auto_stories_rounded, label: 'Diary'),
   _DrawerItem(icon: Icons.map_outlined, label: 'Story Map'),
-  _DrawerItem(icon: Icons.local_fire_department_outlined, label: 'Trending'),
+  _DrawerItem(icon: Icons.local_fire_department_rounded, label: 'Trending'),
 ];
 
-class _DrawerProfileHeader extends StatelessWidget {
-  const _DrawerProfileHeader({
-    required this.displayName,
-    required this.handle,
-    required this.profilePhotoUrl,
-    required this.onProfileTap,
-    required this.onAddAccount,
-  });
-
-  final String displayName;
-  final String handle;
-  final String profilePhotoUrl;
-  final VoidCallback onProfileTap;
-  final VoidCallback onAddAccount;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onProfileTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFE8E8EC),
-                border: Border.all(color: const Color(0xFFD0D0D6), width: 1.5),
-              ),
-              child: profilePhotoUrl.isEmpty
-                  ? const Icon(
-                      Icons.person_rounded,
-                      size: 34,
-                      color: Color(0xFFB8B4C0),
-                    )
-                  : ClipOval(
-                      child: Image.network(
-                        profilePhotoUrl,
-                        fit: BoxFit.cover,
-                        width: 56,
-                        height: 56,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.person_rounded,
-                            size: 34,
-                            color: Color(0xFFB8B4C0),
-                          );
-                        },
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              displayName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: _textDark,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              handle,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: _textMid,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: onAddAccount,
-                          borderRadius: BorderRadius.circular(20),
-                          child: const Padding(
-                            padding: EdgeInsets.all(6),
-                            child: Icon(
-                              Icons.person_add_alt_1_outlined,
-                              size: 22,
-                              color: _textDark,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const Row(
-                    children: [
-                      _StatChip(label: '0 Following'),
-                      SizedBox(width: 16),
-                      _StatChip(label: '0 Followers'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: 13,
-        color: _textMid,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: _textMid,
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerTile extends StatelessWidget {
-  const _DrawerTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.iconColor = _textDark,
-    this.labelColor = _textDark,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color iconColor;
-  final Color labelColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 11),
-          child: Row(
-            children: [
-              Icon(icon, size: 24, color: iconColor),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: labelColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+const List<_DrawerItem> _communityItems = [
+  _DrawerItem(
+    icon: Icons.visibility_off_outlined,
+    label: 'Manage Confessions',
+  ),
+];
