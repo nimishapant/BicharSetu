@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../comment_sheet.dart';
 import '../../model/post_model.dart';
 import '../../repo/auth_service.dart';
 import '../../theme/bichar_theme_extension.dart';
@@ -33,6 +35,50 @@ class _FeedPostCardState extends State<FeedPostCard> {
       await AuthService().toggleLike(widget.post.postId);
     } catch (_) {}
     _likeInProgress = false;
+  }
+
+  void _onCommentTap() {
+    CommentSheet.show(context, widget.post.postId);
+  }
+
+  Future<void> _onShareTap() async {
+    // Build a shareable text summary of the post
+    final title = widget.post.title.isNotEmpty ? widget.post.title : '';
+    final body = widget.post.body.isNotEmpty ? widget.post.body : '';
+    final username = widget.post.username;
+    final shareText = [
+      if (title.isNotEmpty) title,
+      if (body.isNotEmpty) body,
+      '\n— by @$username on Bichar Setu',
+    ].join('\n\n');
+
+    // Copy to clipboard and show a snackbar
+    await Clipboard.setData(ClipboardData(text: shareText));
+
+    // Increment the share count in Firestore
+    try {
+      await AuthService().incrementShareCount(widget.post.postId);
+    } catch (_) {}
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Theme.of(context).colorScheme.inverseSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        content: const Row(
+          children: [
+            Icon(Icons.copy_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 10),
+            Text(
+              'Post copied to clipboard',
+              style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String get _displayText {
@@ -148,8 +194,8 @@ class _FeedPostCardState extends State<FeedPostCard> {
                     shareCount: widget.post.shareCount,
                     isLiked: _liked,
                     onLikeTap: _onLikeTap,
-                    onCommentTap: () {},
-                    onShareTap: () {},
+                    onCommentTap: _onCommentTap,
+                    onShareTap: _onShareTap,
                   ),
                 ],
               ),

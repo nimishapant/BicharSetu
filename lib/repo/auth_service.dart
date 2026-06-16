@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../firebase_options.dart';
+import '../model/comment_model.dart';
 import '../model/post_model.dart';
 import '../model/user_model.dart';
 
@@ -344,9 +345,14 @@ class AuthService {
   //  Posts — CRUD
   // ─────────────────────────────────────────────────────────
 
-  /// Create a new post in the 'posts' collection.
+  /// Create a new post in the 'posts' collection and increment user postCount.
   Future<void> createPost(PostModel post) async {
-    await _firestore.collection('posts').doc(post.postId).set(post.toMap());
+    final batch = _firestore.batch();
+    final postDoc = _firestore.collection('posts').doc(post.postId);
+    batch.set(postDoc, post.toMap());
+    final userDoc = _firestore.collection('users').doc(post.uid);
+    batch.update(userDoc, {'postCount': FieldValue.increment(1)});
+    await batch.commit();
   }
 
   /// Stream of all posts ordered by creation time (newest first).
@@ -544,5 +550,86 @@ class AuthService {
       });
       return posts;
     });
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Comments
+  // ─────────────────────────────────────────────────────────
+
+  /// Add a comment to a post and increment the post's commentCount.
+  Future<void> addComment(CommentModel comment) async {
+    final batch = _firestore.batch();
+
+    // Write the comment document into the subcollection
+    final commentDoc = _firestore
+        .collection('posts')
+        .doc(comment.postId)
+        .collection('comments')
+        .doc(comment.commentId);
+    batch.set(commentDoc, comment.toMap());
+
+    // Increment commentCount on the parent post
+    final postDoc = _firestore.collection('posts').doc(comment.postId);
+    batch.update(postDoc, {'commentCount': FieldValue.increment(1)});
+
+    await batch.commit();
+  }
+
+  /// Delete a comment and decrement the post's commentCount.
+  Future<void> deleteComment({
+    required String postId,
+    required String commentId,
+  }) async {
+    final batch = _firestore.batch();
+
+    final commentDoc = _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId);
+    batch.delete(commentDoc);
+
+    final postDoc = _firestore.collection('posts').doc(postId);
+    batch.update(postDoc, {'commentCount': FieldValue.increment(-1)});
+
+    await batch.commit();
+  }
+
+  /// Real-time stream of comments for a post, ordered oldest first.
+  Stream<List<CommentModel>> getCommentsStream(String postId) {
+    return _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => CommentModel.fromMap(doc.data()))
+            .toList());
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Share / Repost count
+  // ─────────────────────────────────────────────────────────
+
+  /// Increment the shareCount on a post when the user shares it.
+  Future<void> incrementShareCount(String postId) async {
+    await _firestore
+        .collection('posts')
+        .doc(postId)
+        .update({'shareCount': FieldValue.increment(1)});
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  User post count (real-time)
+  // ─────────────────────────────────────────────────────────
+
+  /// Stream of a user's post count.
+  Stream<int> getUserPostCountStream(String uid) {
+    return _firestore
+        .collection('posts')
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snapshot) => snapshot.size);
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'account_verification_screen.dart';
 import 'createpost_screen.dart';
+import 'followers_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
 import 'model/post_model.dart';
@@ -204,9 +205,29 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ),
                                 ProfileStatsRow(
                                   storiesCount: '0',
-                                  statusCount: '0',
+                                  statusCount: '${user?.postCount ?? 0}',
                                   followersCount: '${user?.followers.length ?? 0}',
                                   followingCount: '${user?.following.length ?? 0}',
+                                  onFollowersTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => FollowersScreen(
+                                          uids: user?.followers ?? [],
+                                          title: 'Followers',
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  onFollowingTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) => FollowersScreen(
+                                          uids: user?.following ?? [],
+                                          title: 'Following',
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                                 ProfileActionButton(
                                   label: _isMe

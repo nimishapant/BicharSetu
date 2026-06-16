@@ -14,6 +14,7 @@ class UserModel {
   final List<String> following;
   final String birthday;
   final String website;
+  final int postCount;
   final DateTime? createdAt;
 
   UserModel({
@@ -30,6 +31,7 @@ class UserModel {
     this.following = const [],
     this.birthday = '',
     this.website = '',
+    this.postCount = 0,
     this.createdAt,
   });
 
@@ -48,6 +50,7 @@ class UserModel {
       'following': following,
       'birthday': birthday,
       'website': website,
+      'postCount': postCount,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -87,6 +90,7 @@ class UserModel {
           const [],
       birthday: map['birthday'] ?? '',
       website: map['website'] ?? '',
+      postCount: (map['postCount'] as int?) ?? 0,
       createdAt: createdTime,
     );
   }
@@ -105,6 +109,7 @@ class UserModel {
     List<String>? following,
     String? birthday,
     String? website,
+    int? postCount,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -121,6 +126,7 @@ class UserModel {
       following: following ?? this.following,
       birthday: birthday ?? this.birthday,
       website: website ?? this.website,
+      postCount: postCount ?? this.postCount,
       createdAt: createdAt ?? this.createdAt,
     );
   }
