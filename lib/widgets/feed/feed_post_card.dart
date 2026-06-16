@@ -4,6 +4,7 @@ import '../../comment_sheet.dart';
 import '../../model/post_model.dart';
 import '../../repo/auth_service.dart';
 import '../../theme/bichar_theme_extension.dart';
+import '../post_backgrounds.dart';
 import 'author_info_widget.dart';
 import 'category_chip.dart';
 import 'engagement_bar.dart';
@@ -140,68 +141,131 @@ class _FeedPostCardState extends State<FeedPostCard> {
                       : bichar.border,
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AuthorInfoWidget(
-                    username: widget.post.username,
-                    timeAgo: widget.post.timeAgo,
-                    profilePhotoUrl: widget.post.profilePhoto,
-                    onMoreTap: () {},
-                  ),
-                  if (widget.post.category.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    CategoryChip(category: widget.post.category),
-                  ],
-                  const SizedBox(height: 14),
-                  Text(
-                    _displayText,
-                    style: TextStyle(
-                      fontSize: 15.5,
-                      height: 1.55,
-                      fontWeight: FontWeight.w500,
-                      color: bichar.textPrimary,
-                      letterSpacing: 0.05,
+                  // ── Coloured background block (shows above author info) ──
+                  if (widget.post.backgroundIndex > 0)
+                    _ColoredPostBody(
+                      text: _displayText,
+                      backgroundIndex: widget.post.backgroundIndex,
                     ),
-                  ),
-                  if (widget.post.keywords.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: widget.post.keywords.map((tag) {
-                        return Text(
-                          '#$tag',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: accent.withValues(alpha: 0.9),
+
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AuthorInfoWidget(
+                          username: widget.post.username,
+                          timeAgo: widget.post.timeAgo,
+                          profilePhotoUrl: widget.post.profilePhoto,
+                          onMoreTap: () {},
+                        ),
+                        if (widget.post.category.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          CategoryChip(category: widget.post.category),
+                        ],
+                        if (widget.post.backgroundIndex == 0) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            _displayText,
+                            style: TextStyle(
+                              fontSize: 15.5,
+                              height: 1.55,
+                              fontWeight: FontWeight.w500,
+                              color: bichar.textPrimary,
+                              letterSpacing: 0.05,
+                            ),
                           ),
-                        );
-                      }).toList(),
+                        ],
+                        if (widget.post.keywords.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: widget.post.keywords.map((tag) {
+                              return Text(
+                                '#$tag',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: accent.withValues(alpha: 0.9),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                        Divider(
+                          height: 1,
+                          color: bichar.border.withValues(alpha: 0.85),
+                        ),
+                        const SizedBox(height: 10),
+                        EngagementBar(
+                          likeCount: widget.post.likeCount,
+                          commentCount: widget.post.commentCount,
+                          shareCount: widget.post.shareCount,
+                          isLiked: _liked,
+                          onLikeTap: _onLikeTap,
+                          onCommentTap: _onCommentTap,
+                          onShareTap: _onShareTap,
+                        ),
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 14),
-                  Divider(
-                    height: 1,
-                    color: bichar.border.withValues(alpha: 0.85),
-                  ),
-                  const SizedBox(height: 10),
-                  EngagementBar(
-                    likeCount: widget.post.likeCount,
-                    commentCount: widget.post.commentCount,
-                    shareCount: widget.post.shareCount,
-                    isLiked: _liked,
-                    onLikeTap: _onLikeTap,
-                    onCommentTap: _onCommentTap,
-                    onShareTap: _onShareTap,
                   ),
                 ],
               ),
             ),
           ),
         ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-width gradient block that renders post text on a coloured background.
+class _ColoredPostBody extends StatelessWidget {
+  const _ColoredPostBody({
+    required this.text,
+    required this.backgroundIndex,
+  });
+
+  final String text;
+  final int backgroundIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = PostBackground.gradientFor(backgroundIndex);
+    if (gradient == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 140),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(FeedLayout.cardRadius),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            height: 1.4,
+            shadows: [
+              Shadow(
+                color: Color(0x40000000),
+                blurRadius: 6,
+              ),
+            ],
+          ),
         ),
       ),
     );

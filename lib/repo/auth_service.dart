@@ -326,6 +326,19 @@ class AuthService {
     final userDoc = _firestore.collection('users').doc(post.uid);
     batch.update(userDoc, {'postCount': FieldValue.increment(1)});
     await batch.commit();
+
+    // Notify @mentioned users in the post body/title — best effort
+    try {
+      final fullText = '${post.title} ${post.body}';
+      await _sendMentionNotifications(
+        text: fullText,
+        senderUid: post.uid,
+        senderUsername: post.username,
+        senderProfilePhoto: post.profilePhoto,
+        postId: post.postId,
+        contextId: post.postId,
+      );
+    } catch (_) {}
   }
 
   /// Stream of all posts ordered by creation time (newest first).
@@ -623,6 +636,16 @@ class AuthService {
           ),
         );
       }
+
+      // Notify mentioned users in the comment text
+      await _sendMentionNotifications(
+        text: comment.text,
+        senderUid: comment.uid,
+        senderUsername: comment.username,
+        senderProfilePhoto: comment.profilePhoto,
+        postId: comment.postId,
+        contextId: comment.commentId,
+      );
     } catch (_) {}
   }
 
@@ -676,6 +699,16 @@ class AuthService {
           ),
         );
       }
+
+      // Notify mentioned users in the reply text
+      await _sendMentionNotifications(
+        text: reply.text,
+        senderUid: reply.uid,
+        senderUsername: reply.username,
+        senderProfilePhoto: reply.profilePhoto,
+        postId: reply.postId,
+        contextId: reply.commentId,
+      );
     } catch (_) {}
   }
 
@@ -864,6 +897,56 @@ class AuthService {
         .collection('notifications')
         .doc(notification.notificationId)
         .set(notification.toMap());
+  }
+
+  /// Parse @mentions from [text], look up each username in Firestore,
+  /// and send a mention notification to every matched user.
+  /// Skips the sender themselves and deduplicates by username.
+  Future<void> _sendMentionNotifications({
+    required String text,
+    required String senderUid,
+    required String senderUsername,
+    required String senderProfilePhoto,
+    required String postId,
+    required String contextId, // commentId or postId used to deduplicate
+  }) async {
+    final mentionRegex = RegExp(r'@(\w+)');
+    final mentions = mentionRegex
+        .allMatches(text)
+        .map((m) => m.group(1)!.toLowerCase())
+        .toSet(); // unique usernames
+
+    for (final username in mentions) {
+      if (username == senderUsername.toLowerCase()) continue;
+
+      try {
+        final snap = await _firestore
+            .collection('users')
+            .where('username', isEqualTo: username)
+            .limit(1)
+            .get();
+
+        if (snap.docs.isEmpty) continue;
+        final recipientUid = snap.docs.first.id;
+        if (recipientUid == senderUid) continue;
+
+        await _sendNotification(
+          NotificationModel(
+            notificationId: 'mention_${contextId}_$recipientUid',
+            recipientUid: recipientUid,
+            senderUid: senderUid,
+            senderUsername: senderUsername,
+            senderProfilePhoto: senderProfilePhoto,
+            type: NotificationType.mention,
+            postId: postId,
+            postPreview: text.length > 60 ? '${text.substring(0, 60)}…' : text,
+            createdAt: DateTime.now(),
+          ),
+        );
+      } catch (_) {
+        // One failed mention should never block the others
+      }
+    }
   }
 
   /// Build a short post preview string from raw post data.

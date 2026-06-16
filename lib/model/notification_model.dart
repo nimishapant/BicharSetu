@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// The type of action that triggered a notification.
-enum NotificationType { like, comment }
+enum NotificationType { like, comment, mention }
 
 class NotificationModel {
   final String notificationId;
@@ -72,7 +72,9 @@ class NotificationModel {
       senderProfilePhoto: map['senderProfilePhoto'] ?? '',
       type: map['type'] == 'comment'
           ? NotificationType.comment
-          : NotificationType.like,
+          : map['type'] == 'mention'
+              ? NotificationType.mention
+              : NotificationType.like,
       postId: map['postId'] ?? '',
       postPreview: map['postPreview'] ?? '',
       commentText: map['commentText'] as String?,

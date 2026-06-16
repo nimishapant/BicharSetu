@@ -177,7 +177,27 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final bichar = context.bichar;
     final isLike = notification.type == NotificationType.like;
+    final isMention = notification.type == NotificationType.mention;
     final isUnread = !notification.isRead;
+
+    // Badge icon + color per type
+    final badgeColor = isLike
+        ? Colors.redAccent
+        : isMention
+            ? const Color(0xFFF59E0B) // amber for mention
+            : bichar.accent;
+    final badgeIcon = isLike
+        ? Icons.favorite_rounded
+        : isMention
+            ? Icons.alternate_email_rounded
+            : Icons.chat_bubble_rounded;
+
+    // Action text per type
+    final actionText = isLike
+        ? ' liked your post'
+        : isMention
+            ? ' mentioned you'
+            : ' commented on your post';
 
     return InkWell(
       onTap: onTap,
@@ -190,12 +210,11 @@ class _NotificationTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar with notification type badge
+            // Avatar with type badge
             Stack(
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 46, height: 46,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _avatarColor(notification.senderUsername),
@@ -211,28 +230,15 @@ class _NotificationTile extends StatelessWidget {
                       : _AvatarInitial(name: notification.senderUsername),
                 ),
                 Positioned(
-                  right: 0,
-                  bottom: 0,
+                  right: 0, bottom: 0,
                   child: Container(
-                    width: 18,
-                    height: 18,
+                    width: 18, height: 18,
                     decoration: BoxDecoration(
-                      color: isLike
-                          ? Colors.redAccent
-                          : bichar.accent,
+                      color: badgeColor,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: bichar.cardBackground,
-                        width: 2,
-                      ),
+                      border: Border.all(color: bichar.cardBackground, width: 2),
                     ),
-                    child: Icon(
-                      isLike
-                          ? Icons.favorite_rounded
-                          : Icons.chat_bubble_rounded,
-                      size: 9,
-                      color: Colors.white,
-                    ),
+                    child: Icon(badgeIcon, size: 9, color: Colors.white),
                   ),
                 ),
               ],
@@ -245,11 +251,7 @@ class _NotificationTile extends StatelessWidget {
                 children: [
                   RichText(
                     text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        color: bichar.textPrimary,
-                        height: 1.4,
-                      ),
+                      style: TextStyle(fontSize: 14.5, color: bichar.textPrimary, height: 1.4),
                       children: [
                         TextSpan(
                           text: notification.senderUsername.isNotEmpty
@@ -259,9 +261,7 @@ class _NotificationTile extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                         TextSpan(
-                          text: isLike
-                              ? ' liked your post'
-                              : ' commented on your post',
+                          text: actionText,
                           style: const TextStyle(fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -280,31 +280,21 @@ class _NotificationTile extends StatelessWidget {
                       ),
                     ),
                   ],
-                  if (!isLike &&
-                      notification.commentText != null &&
+                  if (!isLike && notification.commentText != null &&
                       notification.commentText!.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: bichar.searchFieldBackground,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: bichar.border.withValues(alpha: 0.6),
-                        ),
+                        border: Border.all(color: bichar.border.withValues(alpha: 0.6)),
                       ),
                       child: Text(
                         '"${notification.commentText}"',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: bichar.textPrimary,
-                          height: 1.35,
-                        ),
+                        style: TextStyle(fontSize: 13, color: bichar.textPrimary, height: 1.35),
                       ),
                     ),
                   ],
@@ -312,27 +302,16 @@ class _NotificationTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Time + unread dot
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  notification.timeAgo,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: bichar.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                Text(notification.timeAgo,
+                    style: TextStyle(fontSize: 12, color: bichar.textSecondary, fontWeight: FontWeight.w500)),
                 if (isUnread) ...[
                   const SizedBox(height: 6),
                   Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: bichar.accent,
-                      shape: BoxShape.circle,
-                    ),
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(color: bichar.accent, shape: BoxShape.circle),
                   ),
                 ],
               ],

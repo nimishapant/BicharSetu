@@ -13,6 +13,8 @@ class PostModel {
   final int commentCount;
   final int shareCount;
   final String imageUrl;
+  /// Index into the post background palette (0 = no background / default card).
+  final int backgroundIndex;
   final DateTime? createdAt;
 
   PostModel({
@@ -28,6 +30,7 @@ class PostModel {
     this.commentCount = 0,
     this.shareCount = 0,
     this.imageUrl = '',
+    this.backgroundIndex = 0,
     this.createdAt,
   });
 
@@ -46,6 +49,7 @@ class PostModel {
       'commentCount': commentCount,
       'shareCount': shareCount,
       'imageUrl': imageUrl,
+      'backgroundIndex': backgroundIndex,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -76,6 +80,7 @@ class PostModel {
       commentCount: map['commentCount'] ?? 0,
       shareCount: map['shareCount'] ?? 0,
       imageUrl: map['imageUrl'] ?? '',
+      backgroundIndex: (map['backgroundIndex'] as int?) ?? 0,
       createdAt: createdTime,
     );
   }
@@ -94,6 +99,7 @@ class PostModel {
     int? commentCount,
     int? shareCount,
     String? imageUrl,
+    int? backgroundIndex,
     DateTime? createdAt,
   }) {
     return PostModel(
@@ -109,6 +115,7 @@ class PostModel {
       commentCount: commentCount ?? this.commentCount,
       shareCount: shareCount ?? this.shareCount,
       imageUrl: imageUrl ?? this.imageUrl,
+      backgroundIndex: backgroundIndex ?? this.backgroundIndex,
       createdAt: createdAt ?? this.createdAt,
     );
   }
