@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import 'model/comment_model.dart';
 import 'repo/auth_service.dart';
 import 'theme/bichar_theme_extension.dart';
+import 'widgets/mention_text_field.dart';
 
 const _reactions = [
   CommentReaction.like,
@@ -294,19 +295,19 @@ class _CommentSheetState extends State<CommentSheet> {
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: bichar.border),
                     ),
-                    child: TextField(
+                    child: MentionTextField(
                       controller: _ctrl,
                       focusNode: _focusNode,
-                      maxLines: 4, minLines: 1,
-                      textInputAction: TextInputAction.newline,
-                      style: TextStyle(fontSize: 15, color: bichar.textPrimary),
+                      hintText: _replyingTo != null ? 'Write a reply…' : 'Add a comment…',
+                      minLines: 1,
+                      maxLines: 4,
+                      onChanged: (_) => setState(() {}),
                       decoration: InputDecoration(
                         hintText: _replyingTo != null ? 'Write a reply…' : 'Add a comment…',
                         hintStyle: TextStyle(color: bichar.textSecondary, fontSize: 15),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       ),
-                      onChanged: (_) => setState(() {}),
                     ),
                   ),
                 ),

@@ -1,10 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'model/post_model.dart';
 import 'repo/auth_service.dart';
+import 'widgets/mention_text_field.dart';
 
 const Color _bg = Color(0xFFF5F5F7);
 const Color _textDark = Color(0xFF1D1A29);
@@ -48,14 +46,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _titleCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
   final _keywordsCtrl = TextEditingController();
+  final _titleFocus = FocusNode();
+  final _bodyFocus = FocusNode();
 
   String _displayName = 'User';
   String _userUid = '';
   String _userProfilePhoto = '';
   int _selectedCategory = 0;
   bool _isPosting = false;
-  File? _postImage;
-  bool _uploadingImage = false;
 
   @override
   void initState() {
@@ -85,6 +83,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     _titleCtrl.dispose();
     _bodyCtrl.dispose();
     _keywordsCtrl.dispose();
+    _titleFocus.dispose();
+    _bodyFocus.dispose();
     super.dispose();
   }
 
@@ -179,8 +179,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       children: [
                         _UserRow(displayName: _displayName),
                         const SizedBox(height: 16),
-                        TextField(
+                        MentionTextField(
                           controller: _titleCtrl,
+                          focusNode: _titleFocus,
+                          hintText: 'Add a catchy title...',
+                          minLines: 1,
+                          maxLines: 3,
+                          textInputAction: TextInputAction.next,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -198,11 +203,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          textCapitalization: TextCapitalization.sentences,
+                          onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: 8),
-                        TextField(
+                        MentionTextField(
                           controller: _bodyCtrl,
+                          focusNode: _bodyFocus,
+                          hintText: 'Write something...',
                           minLines: 4,
                           maxLines: 12,
                           style: const TextStyle(
@@ -220,7 +227,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          textCapitalization: TextCapitalization.sentences,
+                          onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: 12),
                         TextField(
