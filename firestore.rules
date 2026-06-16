@@ -7,8 +7,14 @@ service cloud.firestore {
       // Anyone (even unauthenticated users) can read profiles to check username during sign-up/sign-in
       allow read: if true;
 
-      // Only the owner can create / update their own document
-      allow create, update: if request.auth != null && request.auth.uid == userId;
+      // Only the owner can create their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // The owner can update any field, but other authenticated users can only update the 'followers' field
+      allow update: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followers'])
+      );
     }
 
     // ── Posts collection ──
@@ -19,13 +25,27 @@ service cloud.firestore {
       // Any signed-in user can create a post
       allow create: if request.auth != null;
 
-      // Only the post author can update post content, but any authenticated user can toggle likes
+      // Only the post author can update post content, but any authenticated user can toggle likes, comment count, and share count
       allow update: if request.auth != null && (
         resource.data.uid == request.auth.uid ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentCount', 'shareCount'])
       );
       allow delete: if request.auth != null
                     && resource.data.uid == request.auth.uid;
+
+      // ── Comments subcollection ──
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      }
+    }
+
+    // ── Notifications collection ──
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && resource.data.recipientUid == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.recipientUid == request.auth.uid;
     }
   }
 }

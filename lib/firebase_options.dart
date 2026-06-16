@@ -47,16 +47,15 @@ class DefaultFirebaseOptions {
     projectId: 'bicharsetu-699d4',
     storageBucket: 'bicharsetu-699d4.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDJrdg4_Iru8_60n_EBxCJ-8_Mpge6kkOc',
     appId: '1:126243505392:ios:888f993615fe83087d6e35',
     messagingSenderId: '126243505392',
     projectId: 'bicharsetu-699d4',
     storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+    iosClientId: '126243505392-575328cn9fipqfga59n9on8vlfnccoob.apps.googleusercontent.com',
     iosBundleId: 'com.example.bicharSetu',
   );
-
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyB2s_3RbCvT9rgKYKjvJKBiHUPNr_JbeT4',
     appId: '1:126243505392:web:100df642ecc9069f7d6e35',
@@ -73,6 +72,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '126243505392',
     projectId: 'bicharsetu-699d4',
     storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+    iosClientId: '126243505392-575328cn9fipqfga59n9on8vlfnccoob.apps.googleusercontent.com',
     iosBundleId: 'com.example.bicharSetu',
   );
 
@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'bicharsetu-699d4.firebasestorage.app',
     measurementId: 'G-L3ZGP87C0Y',
   );
-
 }

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../repo/auth_service.dart';
 import '../../theme/bichar_theme_extension.dart';
 
 /// Material 3–inspired bottom navigation with center FAB — matches drawer/settings.
@@ -85,15 +86,22 @@ class _FeedBottomNavState extends State<FeedBottomNav> {
                   onTap: () => widget.onItemTap(2),
                 ),
               ),
-              _NavSlot(
-                icon: Icons.notifications_none_rounded,
-                activeIcon: Icons.notifications_rounded,
-                label: 'Alerts',
-                index: 3,
-                selectedIndex: widget.selectedIndex,
-                onTap: widget.onItemTap,
-                badgePulseController: widget.badgePulseController,
-                showBadge: true,
+              // Notification slot with live unread badge
+              StreamBuilder<int>(
+                stream: AuthService().getUnreadNotificationCount(),
+                builder: (context, snapshot) {
+                  final hasUnread = (snapshot.data ?? 0) > 0;
+                  return _NavSlot(
+                    icon: Icons.notifications_none_rounded,
+                    activeIcon: Icons.notifications_rounded,
+                    label: 'Alerts',
+                    index: 3,
+                    selectedIndex: widget.selectedIndex,
+                    onTap: widget.onItemTap,
+                    badgePulseController: widget.badgePulseController,
+                    showBadge: hasUnread,
+                  );
+                },
               ),
               _ProfileNavSlot(
                 index: 4,
