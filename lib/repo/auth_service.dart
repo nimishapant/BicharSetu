@@ -1,9 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'dart:convert';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -21,6 +22,12 @@ class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Cloudinary unsigned upload — no API key needed
+  static const String _cloudinaryCloudName = 'dvwqyliow';
+  static const String _cloudinaryUploadPreset = 'bichar_setu_preset';
+  static const String _cloudinaryUploadUrl =
+      'https://api.cloudinary.com/v1_1/$_cloudinaryCloudName/image/upload';
 
 
 
@@ -194,21 +201,17 @@ class AuthService {
     if (!await file.exists()) {
       throw Exception('Image file not found. Please pick the image again.');
     }
-    final bytes = await file.readAsBytes();
-    return _uploadImage(
-      bytes: bytes,
+    return _uploadFile(
+      file: file,
       storageFolder: 'profile_photos',
-      fileName: 'profile.jpg',
       firestoreField: 'profilePhoto',
     );
   }
 
-  Future<String> uploadProfilePhotoFromXFile(XFile file) async {
-    final bytes = await file.readAsBytes();
-    return _uploadImage(
-      bytes: bytes,
+  Future<String> uploadProfilePhotoFromXFile(XFile xfile) async {
+    return _uploadFile(
+      file: File(xfile.path),
       storageFolder: 'profile_photos',
-      fileName: 'profile.jpg',
       firestoreField: 'profilePhoto',
     );
   }
@@ -218,35 +221,28 @@ class AuthService {
     if (!await file.exists()) {
       throw Exception('Image file not found. Please pick the image again.');
     }
-    final bytes = await file.readAsBytes();
-    return _uploadImage(
-      bytes: bytes,
+    return _uploadFile(
+      file: file,
       storageFolder: 'cover_photos',
-      fileName: 'cover.jpg',
       firestoreField: 'coverPhoto',
     );
   }
 
-  Future<String> uploadCoverPhotoFromXFile(XFile file) async {
-    final bytes = await file.readAsBytes();
-    return _uploadImage(
-      bytes: bytes,
+  Future<String> uploadCoverPhotoFromXFile(XFile xfile) async {
+    return _uploadFile(
+      file: File(xfile.path),
       storageFolder: 'cover_photos',
-      fileName: 'cover.jpg',
       firestoreField: 'coverPhoto',
     );
   }
 
-  Future<String> uploadGalleryPhotoFromXFile(XFile file) async {
+  Future<String> uploadGalleryPhotoFromXFile(XFile xfile) async {
     final User? user = _auth.currentUser;
     if (user == null) throw Exception('No user signed in');
 
-    final bytes = await file.readAsBytes();
-    final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final url = await _uploadImage(
-      bytes: bytes,
+    final url = await _uploadFile(
+      file: File(xfile.path),
       storageFolder: 'gallery_photos',
-      fileName: fileName,
       firestoreField: '',
       skipFirestoreUpdate: true,
     );
@@ -257,35 +253,55 @@ class AuthService {
     return url;
   }
 
-  Future<String> _uploadImage({
-    required Uint8List bytes,
+  /// Core upload — plain HTTP multipart POST to Cloudinary unsigned endpoint.
+  /// No API key required — uses the unsigned upload preset.
+  Future<String> _uploadFile({
+    required File file,
     required String storageFolder,
-    required String fileName,
     required String firestoreField,
     bool skipFirestoreUpdate = false,
   }) async {
     final User? user = _auth.currentUser;
     if (user == null) throw Exception('No user signed in');
 
-    // Generate a beautiful placeholder image URL based on the folder type
-    String downloadUrl;
-    if (storageFolder == 'profile_photos') {
-      downloadUrl = 'https://ui-avatars.com/api/?name=${user.email?.split('@').first ?? 'User'}&background=random&size=200';
-    } else if (storageFolder == 'cover_photos') {
-      downloadUrl = 'https://picsum.photos/seed/${DateTime.now().millisecondsSinceEpoch}/800/400';
-    } else {
-      // Gallery photos
-      downloadUrl = 'https://picsum.photos/seed/${DateTime.now().millisecondsSinceEpoch}/600/600';
-    }
+    try {
+      // Unique public_id per upload so every upload gets a new URL.
+      // Firestore saves the new URL → Flutter loads the fresh image.
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final publicId = 'bichar_setu/$storageFolder/${user.uid}_$timestamp';
 
-    if (!skipFirestoreUpdate && firestoreField.isNotEmpty) {
-      await _firestore.collection('users').doc(user.uid).set(
-        {firestoreField: downloadUrl},
-        SetOptions(merge: true),
-      );
-    }
+      final uri = Uri.parse(_cloudinaryUploadUrl);
+      final request = http.MultipartRequest('POST', uri)
+        ..fields['upload_preset'] = _cloudinaryUploadPreset
+        ..fields['public_id'] = publicId
+        ..files.add(await http.MultipartFile.fromPath('file', file.path));
 
-    return downloadUrl;
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      if (streamedResponse.statusCode != 200) {
+        final decoded = json.decode(responseBody) as Map<String, dynamic>;
+        final msg = decoded['error']?['message'] ?? responseBody;
+        throw Exception('Cloudinary upload failed (${ streamedResponse.statusCode}): $msg');
+      }
+
+      final decoded = json.decode(responseBody) as Map<String, dynamic>;
+      final downloadUrl = decoded['secure_url'] as String?;
+      if (downloadUrl == null) {
+        throw Exception('Cloudinary response missing secure_url');
+      }
+
+      if (!skipFirestoreUpdate && firestoreField.isNotEmpty) {
+        await _firestore.collection('users').doc(user.uid).set(
+          {firestoreField: downloadUrl},
+          SetOptions(merge: true),
+        );
+      }
+
+      return downloadUrl;
+    } catch (e) {
+      throw Exception('Image upload failed: $e');
+    }
   }
 
   /// Toggle private/public account for the current user.
