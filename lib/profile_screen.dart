@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'account_verification_screen.dart';
 import 'createpost_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
@@ -212,7 +213,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   settingsOnTap: () =>
                                       _showSettingsBottomSheet(context),
                                 ),
-                                ProfileBannerCard(onTap: () {}),
+                                ProfileBannerCard(
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute<void>(
+                                        builder: (_) =>
+                                            const AccountVerificationScreen(),
+                                      ),
+                                    );
+                                  },
+                                ),
                                 ProfileTabBar(
                                   controller: _tabController,
                                   selectedIndex: _selectedTab,
