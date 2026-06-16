@@ -582,11 +582,10 @@ class AuthService {
   //  Comments
   // ─────────────────────────────────────────────────────────
 
-  /// Add a comment to a post, increment commentCount, and notify the post author.
+  /// Add a top-level comment and increment the post's commentCount.
   Future<void> addComment(CommentModel comment) async {
     final batch = _firestore.batch();
 
-    // Write the comment document into the subcollection
     final commentDoc = _firestore
         .collection('posts')
         .doc(comment.postId)
@@ -594,20 +593,19 @@ class AuthService {
         .doc(comment.commentId);
     batch.set(commentDoc, comment.toMap());
 
-    // Increment commentCount on the parent post
     final postDoc = _firestore.collection('posts').doc(comment.postId);
     batch.update(postDoc, {'commentCount': FieldValue.increment(1)});
 
     await batch.commit();
 
-    // Send notification to post author (outside batch — best effort)
+    // Notify post author — best effort
     try {
-      final postSnap = await _firestore.collection('posts').doc(comment.postId).get();
+      final postSnap =
+          await _firestore.collection('posts').doc(comment.postId).get();
       if (!postSnap.exists) return;
       final postData = postSnap.data()!;
       final postAuthorUid = postData['uid'] as String? ?? '';
 
-      // Don't notify yourself
       if (postAuthorUid.isNotEmpty && postAuthorUid != comment.uid) {
         final postPreview = _buildPostPreview(postData);
         await _sendNotification(
@@ -625,12 +623,63 @@ class AuthService {
           ),
         );
       }
-    } catch (_) {
-      // Notification failure should never block the comment itself
-    }
+    } catch (_) {}
   }
 
-  /// Delete a comment and decrement the post's commentCount.
+  /// Add a reply to an existing comment.
+  /// The reply is stored as a subcollection under the parent comment.
+  /// Also increments the parent comment's replyCount.
+  Future<void> addReply(CommentModel reply) async {
+    assert(reply.parentId.isNotEmpty, 'Replies must have a parentId');
+
+    final batch = _firestore.batch();
+
+    // Write reply under posts/{postId}/comments/{parentId}/replies/{replyId}
+    final replyDoc = _firestore
+        .collection('posts')
+        .doc(reply.postId)
+        .collection('comments')
+        .doc(reply.parentId)
+        .collection('replies')
+        .doc(reply.commentId);
+    batch.set(replyDoc, reply.toMap());
+
+    // Increment replyCount on the parent comment
+    final parentDoc = _firestore
+        .collection('posts')
+        .doc(reply.postId)
+        .collection('comments')
+        .doc(reply.parentId);
+    batch.update(parentDoc, {'replyCount': FieldValue.increment(1)});
+
+    await batch.commit();
+
+    // Notify the parent comment author — best effort
+    try {
+      final parentSnap = await parentDoc.get();
+      if (!parentSnap.exists) return;
+      final parentAuthorUid = parentSnap.data()?['uid'] as String? ?? '';
+
+      if (parentAuthorUid.isNotEmpty && parentAuthorUid != reply.uid) {
+        await _sendNotification(
+          NotificationModel(
+            notificationId: 'reply_${reply.commentId}',
+            recipientUid: parentAuthorUid,
+            senderUid: reply.uid,
+            senderUsername: reply.username,
+            senderProfilePhoto: reply.profilePhoto,
+            type: NotificationType.comment,
+            postId: reply.postId,
+            postPreview: 'replied to your comment',
+            commentText: reply.text,
+            createdAt: DateTime.now(),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  /// Delete a top-level comment and decrement post's commentCount.
   Future<void> deleteComment({
     required String postId,
     required String commentId,
@@ -650,7 +699,34 @@ class AuthService {
     await batch.commit();
   }
 
-  /// Real-time stream of comments for a post, ordered oldest first.
+  /// Delete a reply and decrement parent's replyCount.
+  Future<void> deleteReply({
+    required String postId,
+    required String parentCommentId,
+    required String replyId,
+  }) async {
+    final batch = _firestore.batch();
+
+    final replyDoc = _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(parentCommentId)
+        .collection('replies')
+        .doc(replyId);
+    batch.delete(replyDoc);
+
+    final parentDoc = _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(parentCommentId);
+    batch.update(parentDoc, {'replyCount': FieldValue.increment(-1)});
+
+    await batch.commit();
+  }
+
+  /// Real-time stream of top-level comments for a post, oldest first.
   Stream<List<CommentModel>> getCommentsStream(String postId) {
     return _firestore
         .collection('posts')
@@ -658,9 +734,99 @@ class AuthService {
         .collection('comments')
         .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CommentModel.fromMap(doc.data()))
-            .toList());
+        .map((snap) =>
+            snap.docs.map((d) => CommentModel.fromMap(d.data())).toList());
+  }
+
+  /// Real-time stream of replies for a specific comment, oldest first.
+  Stream<List<CommentModel>> getRepliesStream(
+      String postId, String parentCommentId) {
+    return _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(parentCommentId)
+        .collection('replies')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => CommentModel.fromMap(d.data())).toList());
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Comment Reactions
+  // ─────────────────────────────────────────────────────────
+
+  /// Toggle a reaction on a comment or a reply.
+  /// [parentCommentId] is only set when reacting to a reply.
+  Future<void> toggleCommentReaction({
+    required String postId,
+    required String commentId,
+    required String reactionType,
+    String parentCommentId = '',
+  }) async {
+    final uid = currentUid;
+    if (uid == null) return;
+
+    // Resolve the correct document reference
+    final DocumentReference docRef = parentCommentId.isEmpty
+        ? _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('comments')
+            .doc(commentId)
+        : _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('comments')
+            .doc(parentCommentId)
+            .collection('replies')
+            .doc(commentId);
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data() as Map<String, dynamic>?;
+    final raw = data?['reactions'] as Map<String, dynamic>? ?? {};
+    final reactions =
+        raw.map((k, v) => MapEntry(k, List<String>.from(v as List)));
+
+    for (final key in reactions.keys.toList()) {
+      reactions[key]?.remove(uid);
+      if (reactions[key]?.isEmpty ?? false) reactions.remove(key);
+    }
+
+    final hadIt = raw[reactionType] != null &&
+        (raw[reactionType] as List).contains(uid);
+    if (!hadIt) {
+      reactions[reactionType] = [...(reactions[reactionType] ?? []), uid];
+    }
+
+    await docRef.update({'reactions': reactions});
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Image uploads for comments and posts
+  // ─────────────────────────────────────────────────────────
+
+  /// Upload an image for a comment and return its Cloudinary URL.
+  Future<String> uploadCommentImage(File file) async {
+    return _uploadFile(
+      file: file,
+      storageFolder: 'comment_images',
+      firestoreField: '',
+      skipFirestoreUpdate: true,
+    );
+  }
+
+  /// Upload an image for a post and return its Cloudinary URL.
+  Future<String> uploadPostImage(File file) async {
+    return _uploadFile(
+      file: file,
+      storageFolder: 'post_images',
+      firestoreField: '',
+      skipFirestoreUpdate: true,
+    );
   }
 
   // ─────────────────────────────────────────────────────────

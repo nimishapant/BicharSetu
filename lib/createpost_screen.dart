@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'model/post_model.dart';
 import 'repo/auth_service.dart';
@@ -51,6 +54,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String _userProfilePhoto = '';
   int _selectedCategory = 0;
   bool _isPosting = false;
+  File? _postImage;
+  bool _uploadingImage = false;
 
   @override
   void initState() {
