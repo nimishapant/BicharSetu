@@ -288,6 +288,16 @@ class AuthService {
     return downloadUrl;
   }
 
+  /// Toggle private/public account for the current user.
+  Future<void> setPrivateAccount({required bool isPrivate}) async {
+    final uid = currentUid;
+    if (uid == null) return;
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .update({'isPrivate': isPrivate});
+  }
+
   // ─────────────────────────────────────────────────────────
   //  Posts — CRUD
   // ─────────────────────────────────────────────────────────
@@ -303,15 +313,43 @@ class AuthService {
   }
 
   /// Stream of all posts ordered by creation time (newest first).
+  /// Posts by private accounts are excluded unless the current user follows them.
   Stream<List<PostModel>> getPostsStream() {
+    final myUid = currentUid;
+
     return _firestore
         .collection('posts')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return PostModel.fromMap(doc.data());
-      }).toList();
+        .asyncMap((snapshot) async {
+      // Build a set of private account UIDs that the current user does NOT follow
+      final Set<String> privateBlockedUids = {};
+
+      if (myUid != null) {
+        // Get current user's following list once
+        final myDoc = await _firestore.collection('users').doc(myUid).get();
+        final following =
+            List<String>.from(myDoc.data()?['following'] ?? []);
+
+        // Collect unique author UIDs from this batch
+        final authorUids =
+            snapshot.docs.map((d) => d.data()['uid'] as String? ?? '').toSet();
+
+        // For each author we don't follow, check if they're private
+        for (final uid in authorUids) {
+          if (uid == myUid || following.contains(uid)) continue;
+          final userDoc =
+              await _firestore.collection('users').doc(uid).get();
+          final isPrivate =
+              (userDoc.data()?['isPrivate'] as bool?) ?? false;
+          if (isPrivate) privateBlockedUids.add(uid);
+        }
+      }
+
+      return snapshot.docs
+          .map((doc) => PostModel.fromMap(doc.data()))
+          .where((post) => !privateBlockedUids.contains(post.uid))
+          .toList();
     });
   }
 

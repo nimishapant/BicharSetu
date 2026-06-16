@@ -15,6 +15,7 @@ class UserModel {
   final String birthday;
   final String website;
   final int postCount;
+  final bool isPrivate;
   final DateTime? createdAt;
 
   UserModel({
@@ -32,6 +33,7 @@ class UserModel {
     this.birthday = '',
     this.website = '',
     this.postCount = 0,
+    this.isPrivate = false,
     this.createdAt,
   });
 
@@ -51,6 +53,7 @@ class UserModel {
       'birthday': birthday,
       'website': website,
       'postCount': postCount,
+      'isPrivate': isPrivate,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -91,6 +94,7 @@ class UserModel {
       birthday: map['birthday'] ?? '',
       website: map['website'] ?? '',
       postCount: (map['postCount'] as int?) ?? 0,
+      isPrivate: (map['isPrivate'] as bool?) ?? false,
       createdAt: createdTime,
     );
   }
@@ -110,6 +114,7 @@ class UserModel {
     String? birthday,
     String? website,
     int? postCount,
+    bool? isPrivate,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -127,6 +132,7 @@ class UserModel {
       birthday: birthday ?? this.birthday,
       website: website ?? this.website,
       postCount: postCount ?? this.postCount,
+      isPrivate: isPrivate ?? this.isPrivate,
       createdAt: createdAt ?? this.createdAt,
     );
   }
