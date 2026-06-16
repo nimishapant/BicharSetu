@@ -364,21 +364,28 @@ class _CommentTileState extends State<_CommentTile> {
   @override
   Widget build(BuildContext context) {
     final bichar = context.bichar;
+    final isDark = context.isDarkMode;
     final isMe = AuthService().currentUid == widget.comment.uid;
     final myUid = AuthService().currentUid ?? '';
 
     CommentReaction? myReaction;
     for (final r in _reactions) {
-      if (widget.comment.reactions[r.name]?.contains(myUid) == true) { myReaction = r; break; }
+      if (widget.comment.reactions[r.name]?.contains(myUid) == true) {
+        myReaction = r;
+        break;
+      }
     }
 
+    final total = widget.comment.totalReactions;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Avatar
+          // ── Avatar ──
           Container(
-            width: 36, height: 36,
+            width: 38, height: 38,
             decoration: BoxDecoration(shape: BoxShape.circle, color: _avatarColor(widget.comment.username)),
             clipBehavior: Clip.antiAlias,
             child: widget.comment.profilePhoto.isNotEmpty
@@ -386,52 +393,106 @@ class _CommentTileState extends State<_CommentTile> {
                     errorBuilder: (_, __, ___) => _Initial(name: widget.comment.username))
                 : _Initial(name: widget.comment.username),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
+
+          // ── Bubble ──
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(
-                  widget.comment.username.isNotEmpty
-                      ? widget.comment.username[0].toUpperCase() + widget.comment.username.substring(1)
-                      : '',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: bichar.textPrimary),
+              Stack(clipBehavior: Clip.none, children: [
+                // Grey bubble
+                Container(
+                  padding: const EdgeInsets.fromLTRB(12, 9, 12, 10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? bichar.searchFieldBackground
+                        : const Color(0xFFF0F2F5),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      topRight: Radius.circular(18),
+                      bottomLeft: Radius.circular(18),
+                      bottomRight: Radius.circular(18),
+                    ),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    // Name row
+                    Row(children: [
+                      Expanded(
+                        child: Text(
+                          widget.comment.username.isNotEmpty
+                              ? widget.comment.username[0].toUpperCase() +
+                                  widget.comment.username.substring(1)
+                              : '',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: bichar.textPrimary),
+                        ),
+                      ),
+                      if (isMe)
+                        GestureDetector(
+                          onTap: () async {
+                            try {
+                              await AuthService().deleteComment(
+                                  postId: widget.comment.postId,
+                                  commentId: widget.comment.commentId);
+                            } catch (_) {}
+                          },
+                          child: Icon(Icons.more_horiz_rounded, size: 18, color: bichar.textSecondary),
+                        ),
+                    ]),
+                    const SizedBox(height: 3),
+                    if (widget.comment.text.isNotEmpty)
+                      Text(widget.comment.text,
+                          style: TextStyle(fontSize: 14, height: 1.4, color: bichar.textPrimary)),
+                    if (widget.comment.imageUrl.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(widget.comment.imageUrl,
+                            width: double.infinity, fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                      ),
+                    ],
+                  ]),
                 ),
-                const SizedBox(width: 6),
-                Text(widget.comment.timeAgo, style: TextStyle(fontSize: 12, color: bichar.textSecondary)),
-                const Spacer(),
-                if (isMe)
-                  GestureDetector(
-                    onTap: () async {
-                      try { await AuthService().deleteComment(postId: widget.comment.postId, commentId: widget.comment.commentId); }
-                      catch (_) {}
-                    },
-                    child: Icon(Icons.close_rounded, size: 16, color: bichar.textSecondary),
+
+                // ── Reaction badge (bottom-right of bubble) ──
+                if (total > 0)
+                  Positioned(
+                    bottom: -10,
+                    right: 8,
+                    child: _ReactionBadge(
+                      reactions: widget.comment.reactions,
+                      total: total,
+                    ),
                   ),
               ]),
-              const SizedBox(height: 4),
-              if (widget.comment.text.isNotEmpty)
-                Text(widget.comment.text, style: TextStyle(fontSize: 14, height: 1.4, color: bichar.textPrimary)),
-              if (widget.comment.imageUrl.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                ClipRRect(borderRadius: BorderRadius.circular(12),
-                  child: Image.network(widget.comment.imageUrl, width: double.infinity, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink())),
-              ],
-              const SizedBox(height: 8),
-              // Reaction bar + Reply button
-              Row(children: [
-                _ReactionBar(comment: widget.comment, myReaction: myReaction),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () => widget.onReply(widget.comment),
-                  child: Text('Reply', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: bichar.textSecondary)),
-                ),
-              ]),
+
+              // ── Action row: time · Like · Reply ──
+              Padding(
+                padding: const EdgeInsets.only(top: 14, left: 4),
+                child: Row(children: [
+                  Text(widget.comment.timeAgo,
+                      style: TextStyle(fontSize: 12, color: bichar.textSecondary)),
+                  const SizedBox(width: 14),
+                  _LikeButton(
+                    comment: widget.comment,
+                    myReaction: myReaction,
+                    parentCommentId: '',
+                  ),
+                  const SizedBox(width: 14),
+                  GestureDetector(
+                    onTap: () => widget.onReply(widget.comment),
+                    child: Text('Reply',
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: bichar.textSecondary)),
+                  ),
+                ]),
+              ),
             ]),
           ),
         ]),
 
-        // Show/hide replies
+        // ── View/hide replies ──
         if (widget.comment.replyCount > 0)
           Padding(
             padding: const EdgeInsets.only(left: 46, top: 6),
@@ -440,18 +501,19 @@ class _CommentTileState extends State<_CommentTile> {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(
                   _showReplies ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                  size: 18, color: bichar.accent,
-                ),
+                  size: 16, color: bichar.accent),
                 const SizedBox(width: 4),
                 Text(
-                  _showReplies ? 'Hide replies' : '${widget.comment.replyCount} ${widget.comment.replyCount == 1 ? 'reply' : 'replies'}',
+                  _showReplies
+                      ? 'Hide replies'
+                      : 'View ${widget.comment.replyCount} ${widget.comment.replyCount == 1 ? 'reply' : 'replies'}',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: bichar.accent),
                 ),
               ]),
             ),
           ),
 
-        // Replies list
+        // ── Replies ──
         if (_showReplies)
           Padding(
             padding: const EdgeInsets.only(left: 46, top: 4),
@@ -471,7 +533,7 @@ class _CommentTileState extends State<_CommentTile> {
             ),
           ),
 
-        Divider(height: 1, color: bichar.border.withValues(alpha: 0.4)),
+        const SizedBox(height: 6),
       ]),
     );
   }
@@ -499,6 +561,7 @@ class _ReplyTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bichar = context.bichar;
+    final isDark = context.isDarkMode;
     final isMe = AuthService().currentUid == reply.uid;
     final myUid = AuthService().currentUid ?? '';
 
@@ -507,9 +570,12 @@ class _ReplyTile extends StatelessWidget {
       if (reply.reactions[r.name]?.contains(myUid) == true) { myReaction = r; break; }
     }
 
+    final total = reply.totalReactions;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      padding: const EdgeInsets.only(top: 10),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Avatar
         Container(
           width: 30, height: 30,
           decoration: BoxDecoration(shape: BoxShape.circle, color: _avatarColor(reply.username)),
@@ -520,60 +586,87 @@ class _ReplyTile extends StatelessWidget {
               : _Initial(name: reply.username),
         ),
         const SizedBox(width: 8),
+
+        // Bubble
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Text(
-                reply.username.isNotEmpty
-                    ? reply.username[0].toUpperCase() + reply.username.substring(1)
-                    : '',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: bichar.textPrimary),
+            Stack(clipBehavior: Clip.none, children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(11, 8, 11, 9),
+                decoration: BoxDecoration(
+                  color: isDark ? bichar.searchFieldBackground : const Color(0xFFF0F2F5),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(
+                      child: Text(
+                        reply.username.isNotEmpty
+                            ? reply.username[0].toUpperCase() + reply.username.substring(1)
+                            : '',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: bichar.textPrimary),
+                      ),
+                    ),
+                    if (isMe)
+                      GestureDetector(
+                        onTap: () async {
+                          try {
+                            await AuthService().deleteReply(
+                              postId: postId,
+                              parentCommentId: parentCommentId,
+                              replyId: reply.commentId,
+                            );
+                          } catch (_) {}
+                        },
+                        child: Icon(Icons.more_horiz_rounded, size: 16, color: bichar.textSecondary),
+                      ),
+                  ]),
+                  const SizedBox(height: 3),
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(fontSize: 13, height: 1.4, color: bichar.textPrimary),
+                      children: _buildReplyText(reply.text, bichar.accent),
+                    ),
+                  ),
+                  if (reply.imageUrl.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    ClipRRect(borderRadius: BorderRadius.circular(8),
+                      child: Image.network(reply.imageUrl, fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink())),
+                  ],
+                ]),
               ),
-              const SizedBox(width: 6),
-              Text(reply.timeAgo, style: TextStyle(fontSize: 11, color: bichar.textSecondary)),
-              const Spacer(),
-              if (isMe)
-                GestureDetector(
-                  onTap: () async {
-                    try {
-                      await AuthService().deleteReply(
-                        postId: postId,
-                        parentCommentId: parentCommentId,
-                        replyId: reply.commentId,
-                      );
-                    } catch (_) {}
-                  },
-                  child: Icon(Icons.close_rounded, size: 14, color: bichar.textSecondary),
+              if (total > 0)
+                Positioned(
+                  bottom: -10, right: 8,
+                  child: _ReactionBadge(reactions: reply.reactions, total: total),
                 ),
             ]),
-            const SizedBox(height: 3),
-            // Show @mention in accent color
-            RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 13, height: 1.4, color: bichar.textPrimary),
-                children: _buildReplyText(reply.text, bichar.accent),
-              ),
+
+            // Action row
+            Padding(
+              padding: const EdgeInsets.only(top: 14, left: 4),
+              child: Row(children: [
+                Text(reply.timeAgo, style: TextStyle(fontSize: 11, color: bichar.textSecondary)),
+                const SizedBox(width: 14),
+                _LikeButton(
+                  comment: reply,
+                  myReaction: myReaction,
+                  parentCommentId: parentCommentId,
+                ),
+                const SizedBox(width: 14),
+                GestureDetector(
+                  onTap: () => onReply(reply),
+                  child: Text('Reply',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: bichar.textSecondary)),
+                ),
+              ]),
             ),
-            if (reply.imageUrl.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              ClipRRect(borderRadius: BorderRadius.circular(10),
-                child: Image.network(reply.imageUrl, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink())),
-            ],
-            const SizedBox(height: 6),
-            Row(children: [
-              _ReactionBar(
-                comment: reply,
-                myReaction: myReaction,
-                parentCommentId: parentCommentId,
-                isReply: true,
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => onReply(reply),
-                child: Text('Reply', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: bichar.textSecondary)),
-              ),
-            ]),
           ]),
         ),
       ]),
@@ -606,25 +699,24 @@ class _Initial extends StatelessWidget {
   );
 }
 
-// ─── Reaction bar ─────────────────────────────────────────────────────────────
+// ─── Like button (tap = toggle like, hold = pick reaction) ────────────────────
 
-class _ReactionBar extends StatefulWidget {
-  const _ReactionBar({
+class _LikeButton extends StatefulWidget {
+  const _LikeButton({
     required this.comment,
     required this.myReaction,
-    this.parentCommentId = '',
-    this.isReply = false,
+    required this.parentCommentId,
   });
   final CommentModel comment;
   final CommentReaction? myReaction;
   final String parentCommentId;
-  final bool isReply;
 
   @override
-  State<_ReactionBar> createState() => _ReactionBarState();
+  State<_LikeButton> createState() => _LikeButtonState();
 }
 
-class _ReactionBarState extends State<_ReactionBar> with SingleTickerProviderStateMixin {
+class _LikeButtonState extends State<_LikeButton>
+    with SingleTickerProviderStateMixin {
   bool _pickerVisible = false;
   late final AnimationController _animCtrl;
   late final Animation<double> _scaleAnim;
@@ -633,29 +725,35 @@ class _ReactionBarState extends State<_ReactionBar> with SingleTickerProviderSta
   @override
   void initState() {
     super.initState();
-    _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 220));
-    _scaleAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutBack);
-    _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _animCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200));
+    _scaleAnim =
+        CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutBack);
+    _fadeAnim =
+        CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
   }
 
   @override
-  void dispose() { _animCtrl.dispose(); super.dispose(); }
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
 
   void _togglePicker() {
     if (_pickerVisible) {
-      _animCtrl.reverse().then((_) { if (mounted) setState(() => _pickerVisible = false); });
+      _animCtrl.reverse().then(
+          (_) { if (mounted) setState(() => _pickerVisible = false); });
     } else {
       setState(() => _pickerVisible = true);
       _animCtrl.forward(from: 0);
     }
   }
 
-  void _closePicker() {
-    _animCtrl.reverse().then((_) { if (mounted) setState(() => _pickerVisible = false); });
-  }
-
   void _react(CommentReaction r) {
-    _closePicker();
+    if (_pickerVisible) {
+      _animCtrl.reverse().then(
+          (_) { if (mounted) setState(() => _pickerVisible = false); });
+    }
     AuthService().toggleCommentReaction(
       postId: widget.comment.postId,
       commentId: widget.comment.commentId,
@@ -668,45 +766,24 @@ class _ReactionBarState extends State<_ReactionBar> with SingleTickerProviderSta
   Widget build(BuildContext context) {
     final bichar = context.bichar;
     final myReaction = widget.myReaction;
-    final total = widget.comment.totalReactions;
+    final isLiked = myReaction != null;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        GestureDetector(
-          onTap: _togglePicker,
-          onLongPress: () => _react(CommentReaction.like),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-            decoration: BoxDecoration(
-              color: myReaction != null
-                  ? bichar.accent.withValues(alpha: 0.12)
-                  : bichar.searchFieldBackground,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: myReaction != null
-                    ? bichar.accent.withValues(alpha: 0.4)
-                    : bichar.border.withValues(alpha: 0.5),
-              ),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(myReaction != null ? myReaction.emoji : '👍',
-                  style: TextStyle(fontSize: widget.isReply ? 13 : 15)),
-              if (total > 0) ...[
-                const SizedBox(width: 4),
-                Text('$total', style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: myReaction != null ? bichar.accent : bichar.textSecondary,
-                )),
-              ],
-            ]),
+      // ── "Like" text button (tap = like, long-press = picker) ──
+      GestureDetector(
+        onTap: () => _react(CommentReaction.like),
+        onLongPress: _togglePicker,
+        child: Text(
+          isLiked ? myReaction.label : 'Like',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: isLiked ? bichar.accent : bichar.textSecondary,
           ),
         ),
-        const SizedBox(width: 6),
-        if (total > 0) _TopReactionBubbles(reactions: widget.comment.reactions),
-      ]),
+      ),
 
-      // Inline animated emoji picker
+      // ── Floating emoji picker ──
       if (_pickerVisible)
         FadeTransition(
           opacity: _fadeAnim,
@@ -714,13 +791,21 @@ class _ReactionBarState extends State<_ReactionBar> with SingleTickerProviderSta
             scale: _scaleAnim,
             alignment: Alignment.bottomLeft,
             child: Container(
-              margin: const EdgeInsets.only(top: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              margin: const EdgeInsets.only(top: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: bichar.cardBackground,
                 borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: bichar.border.withValues(alpha: 0.8)),
-                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 4))],
+                border: Border.all(
+                    color: bichar.border.withValues(alpha: 0.8)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -733,22 +818,33 @@ class _ReactionBarState extends State<_ReactionBar> with SingleTickerProviderSta
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: isSelected ? bichar.accent.withValues(alpha: 0.15) : Colors.transparent,
+                        color: isSelected
+                            ? bichar.accent.withValues(alpha: 0.15)
+                            : Colors.transparent,
                         shape: BoxShape.circle,
                       ),
-                      child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        AnimatedScale(
-                          scale: isSelected ? 1.25 : 1.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: Text(r.emoji, style: const TextStyle(fontSize: 24)),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(r.label, style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                          color: isSelected ? bichar.accent : bichar.textSecondary,
-                        )),
-                      ]),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedScale(
+                            scale: isSelected ? 1.25 : 1.0,
+                            duration: const Duration(milliseconds: 150),
+                            child: Text(r.emoji,
+                                style: const TextStyle(fontSize: 24)),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(r.label,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: isSelected
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? bichar.accent
+                                    : bichar.textSecondary,
+                              )),
+                        ],
+                      ),
                     ),
                   );
                 }).toList(),
@@ -760,24 +856,54 @@ class _ReactionBarState extends State<_ReactionBar> with SingleTickerProviderSta
   }
 }
 
-class _TopReactionBubbles extends StatelessWidget {
-  const _TopReactionBubbles({required this.reactions});
+// ─── Reaction badge (floats on bottom-right of bubble) ────────────────────────
+
+class _ReactionBadge extends StatelessWidget {
+  const _ReactionBadge({required this.reactions, required this.total});
   final Map<String, List<String>> reactions;
+  final int total;
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+    final isDark = context.isDarkMode;
+
+    // Top 2 reaction emojis by count
     final sorted = reactions.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
-    final top = sorted.take(3).toList();
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: top.asMap().entries.map((e) {
-        final r = CommentReaction.values.firstWhere((x) => x.name == e.value.key, orElse: () => CommentReaction.like);
-        return Transform.translate(
-          offset: Offset(-(e.key * 5.0), 0),
-          child: Text(r.emoji, style: const TextStyle(fontSize: 12)),
-        );
-      }).toList(),
+    final topEmojis = sorted.take(2).map((e) {
+      final r = CommentReaction.values.firstWhere(
+          (x) => x.name == e.key, orElse: () => CommentReaction.like);
+      return r.emoji;
+    }).toList();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: isDark ? bichar.cardBackground : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        ...topEmojis.map((e) => Text(e, style: const TextStyle(fontSize: 13))),
+        if (total > 1) ...[
+          const SizedBox(width: 3),
+          Text(
+            '$total',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: bichar.textSecondary,
+            ),
+          ),
+        ],
+      ]),
     );
   }
 }
