@@ -3,9 +3,11 @@ import 'account_verification_screen.dart';
 import 'createpost_screen.dart';
 import 'loginScreen.dart';
 import 'model/user_model.dart';
+import 'model/post_model.dart';
 import 'profileedit_screen.dart';
 import 'repo/auth_service.dart';
 import 'theme/bichar_theme_extension.dart';
+import 'widgets/feed/feed_post_card.dart';
 import 'widgets/profile/profile_about_tile.dart';
 import 'widgets/profile/profile_action_button.dart';
 import 'widgets/profile/profile_app_bar.dart';
@@ -17,7 +19,8 @@ import 'widgets/profile/profile_stats_row.dart';
 import 'widgets/profile/profile_tab_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.userId});
+  final String? userId;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -133,37 +136,37 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  String _getMonth(DateTime dt) {
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return months[dt.month - 1];
+
+  String get _effectiveUserId => widget.userId ?? AuthService().currentUid ?? '';
+  bool get _isMe => _effectiveUserId == AuthService().currentUid;
+
+  Future<void> _toggleFollowUser() async {
+    try {
+      await AuthService().toggleFollowUser(_effectiveUserId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update follow status: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<UserModel?>(
-      stream: AuthService().currentUserModelStream,
+      stream: AuthService().userModelStream(_effectiveUserId),
       builder: (context, snapshot) {
         final user = snapshot.data;
         final usernameDisplay = user?.username ?? 'Aditya';
-        final emailDisplay = user?.email ?? 'adityasama98@gmail.com';
         final bioDisplay = user?.aboutMe ?? '';
         final profilePhotoUrl = user?.profilePhoto ?? '';
-        final joinedDisplay = user?.createdAt != null
-            ? '${_getMonth(user!.createdAt!)} ${user.createdAt!.year}'
-            : 'May 2026';
+
+        final currentUid = AuthService().currentUid;
+        final isFollowing = user?.followers.contains(currentUid) ?? false;
 
         final bichar = context.bichar;
 
@@ -199,30 +202,42 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   profilePhotoUrl: profilePhotoUrl,
                                   heroTag: 'profile_avatar_$profilePhotoUrl',
                                 ),
-                                const ProfileStatsRow(),
+                                ProfileStatsRow(
+                                  storiesCount: '0',
+                                  statusCount: '0',
+                                  followersCount: '${user?.followers.length ?? 0}',
+                                  followingCount: '${user?.following.length ?? 0}',
+                                ),
                                 ProfileActionButton(
-                                  label: 'Edit Profile',
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) =>
-                                            const ProfileEditScreen(),
-                                      ),
-                                    );
-                                  },
-                                  settingsOnTap: () =>
-                                      _showSettingsBottomSheet(context),
+                                  label: _isMe
+                                      ? 'Edit Profile'
+                                      : (isFollowing ? 'Unfollow' : 'Follow'),
+                                  onTap: _isMe
+                                      ? () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) =>
+                                                  const ProfileEditScreen(),
+                                            ),
+                                          );
+                                        }
+                                      : _toggleFollowUser,
+                                  showSettings: _isMe,
+                                  settingsOnTap: _isMe
+                                      ? () => _showSettingsBottomSheet(context)
+                                      : null,
                                 ),
-                                ProfileBannerCard(
-                                  onTap: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute<void>(
-                                        builder: (_) =>
-                                            const AccountVerificationScreen(),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                if (_isMe)
+                                  ProfileBannerCard(
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) =>
+                                              const AccountVerificationScreen(),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ProfileTabBar(
                                   controller: _tabController,
                                   selectedIndex: _selectedTab,
@@ -235,11 +250,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                       body: TabBarView(
                         controller: _tabController,
                         children: [
-                          const _ArticlesTab(),
-                          const _LikedTab(),
+                          _ArticlesTab(userId: _effectiveUserId),
+                          _LikedTab(userId: _effectiveUserId),
                           _AboutTab(
-                            joinedDate: joinedDisplay,
-                            email: emailDisplay,
+                            user: user,
                           ),
                         ],
                       ),
@@ -256,58 +270,169 @@ class _ProfileScreenState extends State<ProfileScreen>
 }
 
 class _ArticlesTab extends StatelessWidget {
-  const _ArticlesTab();
+  const _ArticlesTab({required this.userId});
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
-    return ProfileLayout.constrain(
-      context: context,
-      padding: EdgeInsets.symmetric(
-        horizontal: ProfileLayout.horizontalPadding(context),
-      ),
-      child: ProfileEmptyState(
-        emoji: '📄',
-        icon: Icons.article_outlined,
-        title: 'No posts yet',
-        subtitle: 'Start sharing your thoughts with the community.',
-        actionLabel: 'Create First Post',
-        onActionTap: () => CreatePostScreen.show(context),
-      ),
+    return StreamBuilder<List<PostModel>>(
+      stream: AuthService().getUserPostsStream(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final posts = snapshot.data ?? [];
+
+        if (posts.isEmpty) {
+          return ProfileLayout.constrain(
+            context: context,
+            padding: EdgeInsets.symmetric(
+              horizontal: ProfileLayout.horizontalPadding(context),
+            ),
+            child: ProfileEmptyState(
+              emoji: '📄',
+              icon: Icons.article_outlined,
+              title: 'No posts yet',
+              subtitle: 'Start sharing your thoughts with the community.',
+              actionLabel: userId == AuthService().currentUid ? 'Create First Post' : null,
+              onActionTap: userId == AuthService().currentUid ? () => CreatePostScreen.show(context) : null,
+            ),
+          );
+        }
+
+        return ListView.builder(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            ProfileLayout.horizontalPadding(context),
+            12,
+            ProfileLayout.horizontalPadding(context),
+            24,
+          ),
+          itemCount: posts.length,
+          itemBuilder: (context, index) {
+            final post = posts[index];
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ProfileLayout.maxContentWidth(context),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: FeedPostCard(post: post),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class _LikedTab extends StatelessWidget {
-  const _LikedTab();
+  const _LikedTab({required this.userId});
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
-    return ProfileLayout.constrain(
-      context: context,
-      padding: EdgeInsets.symmetric(
-        horizontal: ProfileLayout.horizontalPadding(context),
-      ),
-      child: const ProfileEmptyState(
-        emoji: '❤️',
-        icon: Icons.favorite_border_rounded,
-        title: 'No liked posts yet',
-        subtitle: 'Posts you appreciate will appear here.',
-      ),
+    return StreamBuilder<List<PostModel>>(
+      stream: AuthService().getUserLikedPostsStream(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final posts = snapshot.data ?? [];
+
+        if (posts.isEmpty) {
+          return ProfileLayout.constrain(
+            context: context,
+            padding: EdgeInsets.symmetric(
+              horizontal: ProfileLayout.horizontalPadding(context),
+            ),
+            child: const ProfileEmptyState(
+              emoji: '❤️',
+              icon: Icons.favorite_border_rounded,
+              title: 'No liked posts yet',
+              subtitle: 'Posts you appreciate will appear here.',
+            ),
+          );
+        }
+
+        return ListView.builder(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            ProfileLayout.horizontalPadding(context),
+            12,
+            ProfileLayout.horizontalPadding(context),
+            24,
+          ),
+          itemCount: posts.length,
+          itemBuilder: (context, index) {
+            final post = posts[index];
+            return Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ProfileLayout.maxContentWidth(context),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: FeedPostCard(post: post),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class _AboutTab extends StatelessWidget {
   const _AboutTab({
-    required this.joinedDate,
-    required this.email,
+    required this.user,
   });
 
-  final String joinedDate;
-  final String email;
+  final UserModel? user;
+
+  String _getMonth(DateTime dt) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[dt.month - 1];
+  }
 
   @override
   Widget build(BuildContext context) {
+    final joinedDisplay = user?.createdAt != null
+        ? '${_getMonth(user!.createdAt!)} ${user!.createdAt!.year}'
+        : 'May 2026';
+    final emailDisplay = user?.email ?? 'Not set';
+    final birthdayDisplay = user != null && user!.birthday.isNotEmpty
+        ? user!.birthday
+        : 'Not set';
+    final locationDisplay = user != null && user!.location.isNotEmpty
+        ? user!.location
+        : 'Not set';
+    final websiteDisplay = user != null && user!.website.isNotEmpty
+        ? user!.website
+        : 'Not set';
+    final professionDisplay = user != null && user!.profession.isNotEmpty
+        ? user!.profession
+        : 'Not set';
+
     return ProfileLayout.constrain(
       context: context,
       padding: EdgeInsets.fromLTRB(
@@ -320,29 +445,34 @@ class _AboutTab extends StatelessWidget {
         child: Column(
           children: [
             ProfileAboutTile(
+              icon: Icons.work_outline_rounded,
+              label: 'Profession',
+              value: professionDisplay,
+            ),
+            ProfileAboutTile(
               icon: Icons.mail_outline_rounded,
               label: 'Email',
-              value: email,
+              value: emailDisplay,
             ),
-            const ProfileAboutTile(
+            ProfileAboutTile(
               icon: Icons.cake_outlined,
               label: 'Birthday',
-              value: 'Not set',
+              value: birthdayDisplay,
             ),
-            const ProfileAboutTile(
+            ProfileAboutTile(
               icon: Icons.location_on_outlined,
               label: 'Location',
-              value: 'Not set',
+              value: locationDisplay,
             ),
-            const ProfileAboutTile(
+            ProfileAboutTile(
               icon: Icons.link_rounded,
               label: 'Website',
-              value: 'Not set',
+              value: websiteDisplay,
             ),
             ProfileAboutTile(
               icon: Icons.calendar_today_outlined,
               label: 'Joined',
-              value: joinedDate,
+              value: joinedDisplay,
             ),
           ],
         ),

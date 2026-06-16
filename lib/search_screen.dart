@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'theme/bichar_theme_extension.dart';
 
 import 'model/user_model.dart';
 import 'repo/auth_service.dart';
+import 'profile_screen.dart';
 
-const Color _bg = Color(0xFFF7F7FB);
 const Color _surface = Colors.white;
 const Color _headerTint = Color(0xFFFFF0F0);
 const Color _textDark = Color(0xFF1D1A29);
@@ -505,10 +504,9 @@ class _PersonTile extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              behavior: SnackBarBehavior.floating,
-              content: Text('${user.username} — profile coming soon'),
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ProfileScreen(userId: user.uid),
             ),
           );
         },

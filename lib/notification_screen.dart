@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/bichar_theme_extension.dart';
 
-const Color _bg = Color(0xFFF7F7FB);
 const Color _surface = Colors.white;
 const Color _textDark = Color(0xFF1D1A29);
 const Color _textMid = Color(0xFF7A7690);

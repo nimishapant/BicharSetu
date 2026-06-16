@@ -7,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:google_sign_in/google_sign_in.dart';
+
 import '../firebase_options.dart';
 import '../model/post_model.dart';
 import '../model/user_model.dart';
@@ -160,6 +162,8 @@ class AuthService {
     required String aboutMe,
     String? profession,
     String? location,
+    String? birthday,
+    String? website,
   }) async {
     final User? user = _auth.currentUser;
     if (user == null) throw Exception('No user signed in');
@@ -184,6 +188,8 @@ class AuthService {
       'aboutMe': aboutMe.trim(),
       if (profession != null) 'profession': profession.trim(),
       if (location != null) 'location': location.trim(),
+      if (birthday != null) 'birthday': birthday.trim(),
+      if (website != null) 'website': website.trim(),
     });
 
     if (user.email != email.trim()) {
@@ -388,5 +394,155 @@ class AuthService {
     if (doc.data()?['uid'] == uid) {
       await docRef.delete();
     }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Google Sign-In
+  // ─────────────────────────────────────────────────────────
+
+  /// Authenticate user via Google Sign-In and initialize Firestore profile.
+  Future<UserCredential> signInWithGoogle() async {
+    final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+    
+    if (googleUser == null) {
+      throw FirebaseAuthException(
+        code: 'sign-in-aborted',
+        message: 'Google Sign-In was cancelled by the user.',
+      );
+    }
+
+    final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+    final OAuthCredential credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+
+    final UserCredential userCredential = await _auth.signInWithCredential(credential);
+    final User? user = userCredential.user;
+
+    if (user != null) {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        final rawUsername = user.displayName?.replaceAll(' ', '').toLowerCase() ?? 'user';
+        final finalUsername = rawUsername.isNotEmpty ? rawUsername : 'user';
+        
+        // Ensure username is unique in database
+        final uniqueUsername = await _generateUniqueUsername(finalUsername);
+
+        final userModel = UserModel(
+          uid: user.uid,
+          username: uniqueUsername,
+          email: user.email ?? '',
+          aboutMe: 'Write something about yourself...',
+          profilePhoto: user.photoURL ?? '',
+          createdAt: DateTime.now(),
+        );
+        await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
+      }
+    }
+
+    return userCredential;
+  }
+
+  Future<String> _generateUniqueUsername(String base) async {
+    String candidate = base;
+    int counter = 1;
+    while (true) {
+      final query = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: candidate)
+          .limit(1)
+          .get();
+      if (query.docs.isEmpty) return candidate;
+      candidate = '$base$counter';
+      counter++;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  User Profiles & Streams
+  // ─────────────────────────────────────────────────────────
+
+  /// Get real-time stream of a specific user's model.
+  Stream<UserModel?> userModelStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (!doc.exists || doc.data() == null) return null;
+      return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Follow / Unfollow System
+  // ─────────────────────────────────────────────────────────
+
+  /// Toggles follow state between the current user and a target user.
+  Future<void> toggleFollowUser(String targetUid) async {
+    final myUid = currentUid;
+    if (myUid == null || myUid == targetUid) return;
+
+    final myDocRef = _firestore.collection('users').doc(myUid);
+    final targetDocRef = _firestore.collection('users').doc(targetUid);
+
+    final myDoc = await myDocRef.get();
+    if (!myDoc.exists) return;
+
+    final followingList = List<String>.from(myDoc.data()?['following'] ?? []);
+    if (followingList.contains(targetUid)) {
+      // Unfollow
+      await myDocRef.update({
+        'following': FieldValue.arrayRemove([targetUid]),
+      });
+      await targetDocRef.update({
+        'followers': FieldValue.arrayRemove([myUid]),
+      });
+    } else {
+      // Follow
+      await myDocRef.update({
+        'following': FieldValue.arrayUnion([targetUid]),
+      });
+      await targetDocRef.update({
+        'followers': FieldValue.arrayUnion([myUid]),
+      });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  User specific posts
+  // ─────────────────────────────────────────────────────────
+
+  /// Stream of posts created by a specific user.
+  Stream<List<PostModel>> getUserPostsStream(String uid) {
+    return _firestore
+        .collection('posts')
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snapshot) {
+      final posts = snapshot.docs.map((doc) {
+        return PostModel.fromMap(doc.data());
+      }).toList();
+      // Sort in memory because orderBy requires an index which may not exist yet
+      posts.sort((a, b) {
+        if (a.createdAt == null || b.createdAt == null) return 0;
+        return b.createdAt!.compareTo(a.createdAt!);
+      });
+      return posts;
+    });
+  }
+
+  /// Stream of posts liked by a specific user.
+  Stream<List<PostModel>> getUserLikedPostsStream(String uid) {
+    return _firestore
+        .collection('posts')
+        .where('likes', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) {
+      final posts = snapshot.docs.map((doc) {
+        return PostModel.fromMap(doc.data());
+      }).toList();
+      posts.sort((a, b) {
+        if (a.createdAt == null || b.createdAt == null) return 0;
+        return b.createdAt!.compareTo(a.createdAt!);
+      });
+      return posts;
+    });
   }
 }

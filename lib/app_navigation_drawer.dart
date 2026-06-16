@@ -28,31 +28,6 @@ class AppNavigationDrawer extends StatefulWidget {
 }
 
 class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
-  UserModel? _user;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
-
-  Future<void> _loadUser() async {
-    final user = await AuthService().getCurrentUserModel();
-    if (!mounted) return;
-    setState(() {
-      _user = user;
-      _loading = false;
-    });
-  }
-
-  String get _displayName {
-    final name = _user?.username ?? 'User';
-    if (name.isEmpty) return 'User';
-    return name[0].toUpperCase() + name.substring(1);
-  }
-
-  String get _handle => '@${_user?.username ?? 'user'}';
 
   void _closeAndThen(VoidCallback action) {
     Navigator.of(context).pop();
@@ -162,101 +137,118 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
         ),
       ),
       child: SafeArea(
-        child: _loading
-            ? Center(
+        child: StreamBuilder<UserModel?>(
+          stream: AuthService().currentUserModelStream,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
                   color: bichar.accent,
                 ),
-              )
-            : Column(
-                children: [
-                  // Scrollable navigation body — profile + grouped sections.
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.fromLTRB(
-                        horizontalPadding,
-                        12,
-                        horizontalPadding,
-                        8,
-                      ),
-                      children: [
-                        DrawerProfileHeader(
-                          displayName: _displayName,
-                          handle: _handle,
-                          profilePhotoUrl: _user?.profilePhoto ?? '',
-                          onProfileTap: _openProfile,
-                          onEditProfile: _openProfile,
-                          onAddAccount: () => _showComingSoon('Add account'),
-                        ),
-                        const SizedBox(height: 20),
-                        const DrawerSectionHeader(
-                          title: 'Explore',
-                          icon: Icons.explore_outlined,
-                        ),
-                        ..._exploreItems.map(
-                          (item) => DrawerMenuItem(
-                            icon: item.icon,
-                            label: item.label,
-                            onTap: () => _onExploreItemTap(item),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const DrawerSectionHeader(
-                          title: 'Community',
-                          icon: Icons.groups_outlined,
-                        ),
-                        ..._communityItems.map(
-                          (item) => DrawerMenuItem(
-                            icon: item.icon,
-                            label: item.label,
-                            onTap: () => _onCommunityItemTap(item),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const DrawerSectionHeader(
-                          title: 'Settings',
-                          icon: Icons.tune_rounded,
-                        ),
-                        DrawerMenuItem(
-                          icon: Icons.settings_outlined,
-                          label: 'Settings and privacy',
-                          onTap: () => _closeAndThen(() {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => AppSettingsScreen(
-                                  username: _user?.username ?? 'aditya',
-                                ),
-                              ),
-                            );
-                          }),
-                        ),
-                        DrawerMenuItem(
-                          icon: Icons.help_outline_rounded,
-                          label: 'Help Center',
-                          onTap: () => _closeAndThen(() {
-                            Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) => const HelpCenterScreen(),
-                              ),
-                            );
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Sign out stays pinned to the bottom for quick, safe access.
-                  Padding(
+              );
+            }
+
+            final user = snapshot.data;
+            final rawName = user?.username ?? 'User';
+            final displayName = rawName.isNotEmpty
+                ? rawName[0].toUpperCase() + rawName.substring(1)
+                : 'User';
+            final handle = '@${user?.username ?? 'user'}';
+            final profilePhotoUrl = user?.profilePhoto ?? '';
+            final followersCount = user?.followers.length ?? 0;
+            final followingCount = user?.following.length ?? 0;
+
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView(
                     padding: EdgeInsets.fromLTRB(
                       horizontalPadding,
-                      8,
+                      12,
                       horizontalPadding,
-                      16,
+                      8,
                     ),
-                    child: DrawerSignOutButton(onPressed: _onSignOut),
+                    children: [
+                      DrawerProfileHeader(
+                        displayName: displayName,
+                        handle: handle,
+                        profilePhotoUrl: profilePhotoUrl,
+                        onProfileTap: _openProfile,
+                        onEditProfile: _openProfile,
+                        onAddAccount: () => _showComingSoon('Add account'),
+                        followersCount: followersCount,
+                        followingCount: followingCount,
+                      ),
+                      const SizedBox(height: 20),
+                      const DrawerSectionHeader(
+                        title: 'Explore',
+                        icon: Icons.explore_outlined,
+                      ),
+                      ..._exploreItems.map(
+                        (item) => DrawerMenuItem(
+                          icon: item.icon,
+                          label: item.label,
+                          onTap: () => _onExploreItemTap(item),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const DrawerSectionHeader(
+                        title: 'Community',
+                        icon: Icons.groups_outlined,
+                      ),
+                      ..._communityItems.map(
+                        (item) => DrawerMenuItem(
+                          icon: item.icon,
+                          label: item.label,
+                          onTap: () => _onCommunityItemTap(item),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const DrawerSectionHeader(
+                        title: 'Settings',
+                        icon: Icons.tune_rounded,
+                      ),
+                      DrawerMenuItem(
+                        icon: Icons.settings_outlined,
+                        label: 'Settings and privacy',
+                        onTap: () => _closeAndThen(() {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => AppSettingsScreen(
+                                username: user?.username ?? 'aditya',
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      DrawerMenuItem(
+                        icon: Icons.help_outline_rounded,
+                        label: 'Help Center',
+                        onTap: () => _closeAndThen(() {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const HelpCenterScreen(),
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    8,
+                    horizontalPadding,
+                    16,
+                  ),
+                  child: DrawerSignOutButton(onPressed: _onSignOut),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

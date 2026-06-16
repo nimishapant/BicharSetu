@@ -26,6 +26,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   final _aboutCtrl = TextEditingController();
   final _professionCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
+  final _birthdayCtrl = TextEditingController();
+  final _websiteCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   static const int _aboutMaxLength = 150;
@@ -56,6 +58,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         _aboutCtrl.text = user.aboutMe;
         _professionCtrl.text = user.profession;
         _locationCtrl.text = user.location;
+        _birthdayCtrl.text = user.birthday;
+        _websiteCtrl.text = user.website;
         _profilePhotoUrl = user.profilePhoto;
         _coverPhotoUrl = user.coverPhoto;
         _galleryPhotos = List<String>.from(user.galleryPhotos);
@@ -76,6 +80,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     _aboutCtrl.dispose();
     _professionCtrl.dispose();
     _locationCtrl.dispose();
+    _birthdayCtrl.dispose();
+    _websiteCtrl.dispose();
     super.dispose();
   }
 
@@ -90,6 +96,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         aboutMe: _aboutCtrl.text,
         profession: _professionCtrl.text,
         location: _locationCtrl.text,
+        birthday: _birthdayCtrl.text,
+        website: _websiteCtrl.text,
       );
 
       if (!mounted) return;
@@ -303,6 +311,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                                   emailCtrl: _emailCtrl,
                                   professionCtrl: _professionCtrl,
                                   locationCtrl: _locationCtrl,
+                                  birthdayCtrl: _birthdayCtrl,
+                                  websiteCtrl: _websiteCtrl,
                                 ),
                                 const SizedBox(height: 24),
                                 _UpdateButton(
@@ -717,12 +727,16 @@ class _BasicDetailsCard extends StatelessWidget {
     required this.emailCtrl,
     required this.professionCtrl,
     required this.locationCtrl,
+    required this.birthdayCtrl,
+    required this.websiteCtrl,
   });
 
   final TextEditingController usernameCtrl;
   final TextEditingController emailCtrl;
   final TextEditingController professionCtrl;
   final TextEditingController locationCtrl;
+  final TextEditingController birthdayCtrl;
+  final TextEditingController websiteCtrl;
 
   @override
   Widget build(BuildContext context) {
@@ -776,6 +790,16 @@ class _BasicDetailsCard extends StatelessWidget {
             label: 'LOCATION',
             controller: locationCtrl,
             hint: 'e.g. Kathmandu, Nepal',
+          ),
+          _DetailField(
+            label: 'BIRTHDAY',
+            controller: birthdayCtrl,
+            hint: 'e.g. 15 January 2000',
+          ),
+          _DetailField(
+            label: 'WEBSITE',
+            controller: websiteCtrl,
+            hint: 'e.g. https://yourwebsite.com',
             showDivider: false,
           ),
         ],

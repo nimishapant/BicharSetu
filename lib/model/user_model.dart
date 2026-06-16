@@ -10,6 +10,10 @@ class UserModel {
   final String profession;
   final String location;
   final List<String> galleryPhotos;
+  final List<String> followers;
+  final List<String> following;
+  final String birthday;
+  final String website;
   final DateTime? createdAt;
 
   UserModel({
@@ -22,6 +26,10 @@ class UserModel {
     this.profession = '',
     this.location = '',
     this.galleryPhotos = const [],
+    this.followers = const [],
+    this.following = const [],
+    this.birthday = '',
+    this.website = '',
     this.createdAt,
   });
 
@@ -36,6 +44,10 @@ class UserModel {
       'profession': profession,
       'location': location,
       'galleryPhotos': galleryPhotos,
+      'followers': followers,
+      'following': following,
+      'birthday': birthday,
+      'website': website,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -65,6 +77,16 @@ class UserModel {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      followers: (map['followers'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      following: (map['following'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      birthday: map['birthday'] ?? '',
+      website: map['website'] ?? '',
       createdAt: createdTime,
     );
   }
@@ -79,6 +101,10 @@ class UserModel {
     String? profession,
     String? location,
     List<String>? galleryPhotos,
+    List<String>? followers,
+    List<String>? following,
+    String? birthday,
+    String? website,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -91,6 +117,10 @@ class UserModel {
       profession: profession ?? this.profession,
       location: location ?? this.location,
       galleryPhotos: galleryPhotos ?? this.galleryPhotos,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+      birthday: birthday ?? this.birthday,
+      website: website ?? this.website,
       createdAt: createdAt ?? this.createdAt,
     );
   }

@@ -45,6 +45,7 @@ dependencies:
   cloudinary_url_gen: ^1.8.0
   cloudinary_api: ^1.1.1
   shared_preferences: ^2.5.3
+  google_sign_in: ^7.2.0
 
 
 dev_dependencies:

@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import 'firebase_options.dart';
 import 'splashscreen.dart';
@@ -9,6 +10,9 @@ import 'theme/theme_controller.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  try {
+    await GoogleSignIn.instance.initialize();
+  } catch (_) {}
   await ThemeController().load();
   runApp(const MyApp());
 }
