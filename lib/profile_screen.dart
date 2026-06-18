@@ -36,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _isMe ? 4 : 3, vsync: this);
     _tabController.addListener(() {
       setState(() => _selectedTab = _tabController.index);
     });
@@ -203,6 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ProfileTabBar(
                                   controller: _tabController,
                                   selectedIndex: _selectedTab,
+                                  showSaved: _isMe,
                                 ),
                               ],
                             ),
@@ -230,6 +231,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                                 ) ??
                                 false,
                           ),
+                          if (_isMe)
+                            _SavedTab(userId: _effectiveUserId),
                           _AboutTab(user: user),
                         ],
                       ),
@@ -394,6 +397,69 @@ class _LikedTab extends StatelessWidget {
               ),
             );
           },
+        );
+      },
+    );
+  }
+}
+
+// ─── Saved tab — only shown on own profile ────────────────────────────────
+
+class _SavedTab extends StatelessWidget {
+  const _SavedTab({required this.userId});
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<PostModel>>(
+      stream: AuthService().getUserSavedPostsStream(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final posts = snapshot.data ?? [];
+
+        if (posts.isEmpty) {
+          return ProfileLayout.constrain(
+            context: context,
+            padding: EdgeInsets.symmetric(
+              horizontal: ProfileLayout.horizontalPadding(context),
+            ),
+            child: const ProfileEmptyState(
+              emoji: '🔖',
+              icon: Icons.bookmark_border_rounded,
+              title: 'No saved posts yet',
+              subtitle: 'Tap the bookmark icon on any post to save it here.',
+            ),
+          );
+        }
+
+        return ListView.builder(
+          physics: const BouncingScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            ProfileLayout.horizontalPadding(context),
+            12,
+            ProfileLayout.horizontalPadding(context),
+            24,
+          ),
+          itemCount: posts.length,
+          itemBuilder: (context, index) => Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: ProfileLayout.maxContentWidth(context),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: FeedPostCard(post: posts[index]),
+              ),
+            ),
+          ),
         );
       },
     );

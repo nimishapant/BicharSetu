@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../comment_sheet.dart';
+import '../../edit_post_screen.dart';
 import '../../model/post_model.dart';
+import '../../model/user_model.dart';
 import '../../repo/auth_service.dart';
 import '../../theme/bichar_theme_extension.dart';
 import '../post_backgrounds.dart';
@@ -24,6 +26,10 @@ class _FeedPostCardState extends State<FeedPostCard> {
   bool _likeInProgress = false;
   bool _hovered = false;
 
+  bool get _isMyPost =>
+      AuthService().currentUid != null &&
+      AuthService().currentUid == widget.post.uid;
+
   bool get _liked {
     final uid = AuthService().currentUid;
     return uid != null && widget.post.likes.contains(uid);
@@ -36,6 +42,127 @@ class _FeedPostCardState extends State<FeedPostCard> {
       await AuthService().toggleLike(widget.post.postId);
     } catch (_) {}
     _likeInProgress = false;
+  }
+
+  void _showPostMenu() {
+    final bichar = context.bichar;
+    final canEdit = widget.post.canEdit;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: bichar.cardBackground,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: bichar.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Edit — only if within 24 h
+              ListTile(
+                enabled: canEdit,
+                leading: Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: canEdit
+                        ? bichar.accent.withValues(alpha: 0.1)
+                        : bichar.border.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.edit_outlined,
+                      color: canEdit ? bichar.accent : bichar.textSecondary,
+                      size: 20),
+                ),
+                title: Text(
+                  canEdit ? 'Edit post' : 'Edit post (24 h window closed)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: canEdit ? bichar.textPrimary : bichar.textSecondary,
+                  ),
+                ),
+                subtitle: canEdit && widget.post.createdAt != null
+                    ? Text(
+                        '${23 - DateTime.now().difference(widget.post.createdAt!).inHours}h left to edit',
+                        style: TextStyle(fontSize: 12, color: bichar.textSecondary),
+                      )
+                    : null,
+                onTap: canEdit
+                    ? () {
+                        Navigator.of(ctx).pop();
+                        EditPostSheet.show(context, widget.post);
+                      }
+                    : null,
+              ),
+              // Delete
+              ListTile(
+                leading: Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.redAccent, size: 20),
+                ),
+                title: const Text('Delete post',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.redAccent)),
+                onTap: () async {
+                  Navigator.of(ctx).pop();
+                  final messenger = ScaffoldMessenger.of(context);
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dCtx) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)),
+                      title: const Text('Delete post'),
+                      content: const Text(
+                          'This will permanently remove your post. This action cannot be undone.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(dCtx).pop(false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                              backgroundColor: Colors.redAccent),
+                          onPressed: () => Navigator.of(dCtx).pop(true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true) {
+                    try {
+                      await AuthService().deletePost(widget.post.postId);
+                    } catch (e) {
+                      messenger.showSnackBar(SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Colors.redAccent,
+                        content: Text('Failed to delete: $e'),
+                      ));
+                    }
+                  }
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _onCommentTap() {
@@ -160,7 +287,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
                           username: widget.post.username,
                           timeAgo: widget.post.timeAgo,
                           profilePhotoUrl: widget.post.profilePhoto,
-                          onMoreTap: () {},
+                          onMoreTap: _isMyPost ? _showPostMenu : null,
                         ),
                         if (widget.post.category.isNotEmpty) ...[
                           const SizedBox(height: 12),
@@ -202,14 +329,61 @@ class _FeedPostCardState extends State<FeedPostCard> {
                           color: bichar.border.withValues(alpha: 0.85),
                         ),
                         const SizedBox(height: 10),
-                        EngagementBar(
-                          likeCount: widget.post.likeCount,
-                          commentCount: widget.post.commentCount,
-                          shareCount: widget.post.shareCount,
-                          isLiked: _liked,
-                          onLikeTap: _onLikeTap,
-                          onCommentTap: _onCommentTap,
-                          onShareTap: _onShareTap,
+                        StreamBuilder<UserModel?>(
+                          stream: AuthService().userModelStream(
+                              AuthService().currentUid ?? ''),
+                          builder: (context, snap) {
+                            final isSaved = snap.data?.savedPosts
+                                    .contains(widget.post.postId) ??
+                                false;
+                            return EngagementBar(
+                              likeCount: widget.post.likeCount,
+                              commentCount: widget.post.commentCount,
+                              shareCount: widget.post.shareCount,
+                              isLiked: _liked,
+                              isSaved: isSaved,
+                              onLikeTap: _onLikeTap,
+                              onCommentTap: _onCommentTap,
+                              onShareTap: _onShareTap,
+                              onSaveTap: () async {
+                                final wasSaved = isSaved;
+                                try {
+                                  await AuthService()
+                                      .toggleSavePost(widget.post.postId);
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      behavior: SnackBarBehavior.floating,
+                                      duration:
+                                          const Duration(seconds: 1),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12)),
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 12),
+                                      content: Row(children: [
+                                        Icon(
+                                          wasSaved
+                                              ? Icons.bookmark_remove_outlined
+                                              : Icons.bookmark_added_rounded,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          isSaved
+                                              ? 'Post removed from saved'
+                                              : 'Post saved!',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                      ]),
+                                    ),
+                                  );
+                                } catch (_) {}
+                              },
+                            );
+                          },
                         ),
                       ],
                     ),

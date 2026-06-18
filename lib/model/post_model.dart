@@ -16,6 +16,7 @@ class PostModel {
   /// Index into the post background palette (0 = no background / default card).
   final int backgroundIndex;
   final DateTime? createdAt;
+  final DateTime? editedAt; // non-null if post was edited
 
   PostModel({
     required this.postId,
@@ -32,6 +33,7 @@ class PostModel {
     this.imageUrl = '',
     this.backgroundIndex = 0,
     this.createdAt,
+    this.editedAt,
   });
 
   // Convert to Map for saving to Firestore
@@ -53,6 +55,7 @@ class PostModel {
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
+      if (editedAt != null) 'editedAt': Timestamp.fromDate(editedAt!),
     };
   }
 
@@ -82,6 +85,9 @@ class PostModel {
       imageUrl: map['imageUrl'] ?? '',
       backgroundIndex: (map['backgroundIndex'] as int?) ?? 0,
       createdAt: createdTime,
+      editedAt: map['editedAt'] is Timestamp
+          ? (map['editedAt'] as Timestamp).toDate()
+          : null,
     );
   }
 
@@ -101,6 +107,7 @@ class PostModel {
     String? imageUrl,
     int? backgroundIndex,
     DateTime? createdAt,
+    DateTime? editedAt,
   }) {
     return PostModel(
       postId: postId ?? this.postId,
@@ -117,16 +124,26 @@ class PostModel {
       imageUrl: imageUrl ?? this.imageUrl,
       backgroundIndex: backgroundIndex ?? this.backgroundIndex,
       createdAt: createdAt ?? this.createdAt,
+      editedAt: editedAt ?? this.editedAt,
     );
+  }
+
+  /// True if this post was created less than 24 hours ago.
+  bool get canEdit {
+    if (createdAt == null) return false;
+    return DateTime.now().difference(createdAt!).inHours < 24;
   }
 
   /// Convenience: number of likes
   int get likeCount => likes.length;
 
-  /// Human-readable time ago string
+  /// Human-readable time ago string, with "(edited)" suffix if applicable.
   String get timeAgo {
-    if (createdAt == null) return 'Just now';
-    final diff = DateTime.now().difference(createdAt!);
+    final base = createdAt == null ? 'Just now' : _formatDiff(DateTime.now().difference(createdAt!));
+    return editedAt != null ? '$base · Edited' : base;
+  }
+
+  String _formatDiff(Duration diff) {
     if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
     if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
     if (diff.inHours < 24) return '${diff.inHours} hr ago';

@@ -437,8 +437,56 @@ class AuthService {
     if (!doc.exists) return;
 
     if (doc.data()?['uid'] == uid) {
-      await docRef.delete();
+      // Also decrement the user's postCount
+      final batch = _firestore.batch();
+      batch.delete(docRef);
+      batch.update(
+        _firestore.collection('users').doc(uid),
+        {'postCount': FieldValue.increment(-1)},
+      );
+      await batch.commit();
     }
+  }
+
+  /// Update a post's editable fields (only if current user is author
+  /// and the post was created within the last 24 hours).
+  Future<void> updatePost({
+    required String postId,
+    required String title,
+    required String body,
+    required List<String> keywords,
+    required String category,
+    required int backgroundIndex,
+  }) async {
+    final uid = currentUid;
+    if (uid == null) throw Exception('Not signed in');
+
+    final docRef = _firestore.collection('posts').doc(postId);
+    final doc = await docRef.get();
+    if (!doc.exists) throw Exception('Post not found');
+
+    final data = doc.data()!;
+    if (data['uid'] != uid) throw Exception('Not your post');
+
+    // Enforce 24-hour edit window
+    final createdAt = data['createdAt'];
+    if (createdAt != null) {
+      final created = createdAt is Timestamp
+          ? createdAt.toDate()
+          : DateTime.fromMillisecondsSinceEpoch(createdAt as int);
+      if (DateTime.now().difference(created).inHours >= 24) {
+        throw Exception('Posts can only be edited within 24 hours of posting');
+      }
+    }
+
+    await docRef.update({
+      'title': title.trim(),
+      'body': body.trim(),
+      'keywords': keywords,
+      'category': category,
+      'backgroundIndex': backgroundIndex,
+      'editedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   // ─────────────────────────────────────────────────────────
@@ -860,6 +908,40 @@ class AuthService {
       firestoreField: '',
       skipFirestoreUpdate: true,
     );
+  }
+
+  /// Toggle save/bookmark a post for the current user.
+  Future<void> toggleSavePost(String postId) async {
+    final uid = currentUid;
+    if (uid == null) return;
+    final docRef = _firestore.collection('users').doc(uid);
+    final doc = await docRef.get();
+    final saved = List<String>.from(doc.data()?['savedPosts'] ?? []);
+    if (saved.contains(postId)) {
+      await docRef.update({'savedPosts': FieldValue.arrayRemove([postId])});
+    } else {
+      await docRef.update({'savedPosts': FieldValue.arrayUnion([postId])});
+    }
+  }
+
+  /// Stream of posts saved/bookmarked by a specific user.
+  Stream<List<PostModel>> getUserSavedPostsStream(String uid) {
+    return _firestore
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .asyncMap((userSnap) async {
+      final saved = List<String>.from(
+          userSnap.data()?['savedPosts'] ?? []);
+      if (saved.isEmpty) return <PostModel>[];
+      final snaps = await Future.wait(
+        saved.map((id) => _firestore.collection('posts').doc(id).get()),
+      );
+      return snaps
+          .where((d) => d.exists)
+          .map((d) => PostModel.fromMap(d.data()!))
+          .toList();
+    });
   }
 
   // ─────────────────────────────────────────────────────────

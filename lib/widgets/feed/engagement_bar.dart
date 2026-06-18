@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/bichar_theme_extension.dart';
 
-/// Modern engagement row — like, comment, share pills with hover/press animations.
+/// Modern engagement row — like, comment, share, bookmark pills.
 class EngagementBar extends StatelessWidget {
   const EngagementBar({
     super.key,
@@ -9,18 +9,22 @@ class EngagementBar extends StatelessWidget {
     required this.commentCount,
     required this.shareCount,
     required this.isLiked,
+    required this.isSaved,
     required this.onLikeTap,
     required this.onCommentTap,
     required this.onShareTap,
+    required this.onSaveTap,
   });
 
   final int likeCount;
   final int commentCount;
   final int shareCount;
   final bool isLiked;
+  final bool isSaved;
   final VoidCallback onLikeTap;
   final VoidCallback onCommentTap;
   final VoidCallback onShareTap;
+  final VoidCallback onSaveTap;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +47,14 @@ class EngagementBar extends StatelessWidget {
           icon: Icons.ios_share_rounded,
           label: '$shareCount',
           onTap: onShareTap,
+        ),
+        const Spacer(),
+        // Bookmark — right-aligned, no label (Instagram style)
+        _EngagementPill(
+          icon: isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+          label: '',
+          isActive: isSaved,
+          onTap: onSaveTap,
         ),
       ],
     );

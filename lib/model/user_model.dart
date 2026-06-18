@@ -16,6 +16,7 @@ class UserModel {
   final String website;
   final int postCount;
   final bool isPrivate;
+  final List<String> savedPosts;
   final DateTime? createdAt;
 
   UserModel({
@@ -34,6 +35,7 @@ class UserModel {
     this.website = '',
     this.postCount = 0,
     this.isPrivate = false,
+    this.savedPosts = const [],
     this.createdAt,
   });
 
@@ -54,6 +56,7 @@ class UserModel {
       'website': website,
       'postCount': postCount,
       'isPrivate': isPrivate,
+      'savedPosts': savedPosts,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -95,6 +98,10 @@ class UserModel {
       website: map['website'] ?? '',
       postCount: (map['postCount'] as int?) ?? 0,
       isPrivate: (map['isPrivate'] as bool?) ?? false,
+      savedPosts: (map['savedPosts'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       createdAt: createdTime,
     );
   }
@@ -115,6 +122,7 @@ class UserModel {
     String? website,
     int? postCount,
     bool? isPrivate,
+    List<String>? savedPosts,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -133,6 +141,7 @@ class UserModel {
       website: website ?? this.website,
       postCount: postCount ?? this.postCount,
       isPrivate: isPrivate ?? this.isPrivate,
+      savedPosts: savedPosts ?? this.savedPosts,
       createdAt: createdAt ?? this.createdAt,
     );
   }
