@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import 'model/post_model.dart';
 import 'repo/auth_service.dart';
+import 'widgets/mention_text_field.dart';
+import 'widgets/post_backgrounds.dart';
 
 const Color _bg = Color(0xFFF5F5F7);
 const Color _textDark = Color(0xFF1D1A29);
@@ -43,9 +47,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _titleCtrl = TextEditingController();
   final _bodyCtrl = TextEditingController();
   final _keywordsCtrl = TextEditingController();
+  final _titleFocus = FocusNode();
+  final _bodyFocus = FocusNode();
 
   String _displayName = 'User';
+  String _userUid = '';
+  String _userProfilePhoto = '';
   int _selectedCategory = 0;
+  int _selectedBackground = 0; // 0 = no background
   bool _isPosting = false;
 
   @override
@@ -59,7 +68,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _loadUser() async {
     final user = await AuthService().getCurrentUserModel();
     if (!mounted || user == null) return;
-    setState(() => _displayName = user.username);
+    setState(() {
+      _displayName = user.username;
+      _userUid = user.uid;
+      _userProfilePhoto = user.profilePhoto;
+    });
   }
 
   void _onFieldsChanged() => setState(() {});
@@ -72,28 +85,68 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     _titleCtrl.dispose();
     _bodyCtrl.dispose();
     _keywordsCtrl.dispose();
+    _titleFocus.dispose();
+    _bodyFocus.dispose();
     super.dispose();
   }
 
   Future<void> _onPost() async {
     if (!_canPost || _isPosting) return;
     setState(() => _isPosting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    setState(() => _isPosting = false);
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1D1A29),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        content: const Text(
-          'Post shared successfully!',
-          style: TextStyle(fontWeight: FontWeight.w600),
+
+    try {
+      final postId = const Uuid().v4();
+      final keywordsRaw = _keywordsCtrl.text.trim();
+      final keywords = keywordsRaw.isEmpty
+          ? <String>[]
+          : keywordsRaw.split(',').map((k) => k.trim()).where((k) => k.isNotEmpty).toList();
+
+      final post = PostModel(
+        postId: postId,
+        uid: _userUid,
+        username: _displayName,
+        profilePhoto: _userProfilePhoto,
+        title: _titleCtrl.text.trim(),
+        body: _bodyCtrl.text.trim(),
+        category: _categories[_selectedCategory],
+        keywords: keywords,
+        backgroundIndex: _selectedBackground,
+        createdAt: DateTime.now(),
+      );
+
+      await AuthService().createPost(post);
+
+      if (!mounted) return;
+      setState(() => _isPosting = false);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF1D1A29),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          content: const Text(
+            'Post shared successfully!',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isPosting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.redAccent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          content: Text(
+            'Failed to post: $e',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -129,8 +182,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       children: [
                         _UserRow(displayName: _displayName),
                         const SizedBox(height: 16),
-                        TextField(
+                        MentionTextField(
                           controller: _titleCtrl,
+                          focusNode: _titleFocus,
+                          hintText: 'Add a catchy title...',
+                          minLines: 1,
+                          maxLines: 3,
+                          textInputAction: TextInputAction.next,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -148,11 +206,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          textCapitalization: TextCapitalization.sentences,
+                          onChanged: (_) => setState(() {}),
                         ),
                         const SizedBox(height: 8),
-                        TextField(
+                        MentionTextField(
                           controller: _bodyCtrl,
+                          focusNode: _bodyFocus,
+                          hintText: 'Write something...',
                           minLines: 4,
                           maxLines: 12,
                           style: const TextStyle(
@@ -170,8 +230,40 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          textCapitalization: TextCapitalization.sentences,
+                          onChanged: (_) => setState(() {}),
                         ),
+                        const SizedBox(height: 16),
+
+                        // ── Background colour picker ──────────────────────
+                        const Text(
+                          'Post Background',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: _textMid,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        PostBackgroundPicker(
+                          selectedIndex: _selectedBackground,
+                          onSelected: (i) =>
+                              setState(() => _selectedBackground = i),
+                        ),
+
+                        // ── Live preview when background is selected ──────
+                        if (_selectedBackground > 0 &&
+                            (_titleCtrl.text.trim().isNotEmpty ||
+                                _bodyCtrl.text.trim().isNotEmpty)) ...[
+                          const SizedBox(height: 14),
+                          _BackgroundPreview(
+                            text: _titleCtrl.text.trim().isNotEmpty
+                                ? _titleCtrl.text.trim()
+                                : _bodyCtrl.text.trim(),
+                            backgroundIndex: _selectedBackground,
+                          ),
+                        ],
+
                         const SizedBox(height: 12),
                         TextField(
                           controller: _keywordsCtrl,
@@ -414,6 +506,51 @@ class _BottomBar extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Small live preview card shown in the composer when a background is selected.
+class _BackgroundPreview extends StatelessWidget {
+  const _BackgroundPreview({
+    required this.text,
+    required this.backgroundIndex,
+  });
+  final String text;
+  final int backgroundIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final gradient = PostBackground.gradientFor(backgroundIndex);
+    final useDark = PostBackground.isDark(backgroundIndex);
+    final textColor = useDark ? Colors.white : Colors.white;
+
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 100),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      decoration: BoxDecoration(
+        gradient: gradient,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: textColor,
+            height: 1.4,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 4,
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -7,6 +7,16 @@ class UserModel {
   final String aboutMe;
   final String profilePhoto;
   final String coverPhoto;
+  final String profession;
+  final String location;
+  final List<String> galleryPhotos;
+  final List<String> followers;
+  final List<String> following;
+  final String birthday;
+  final String website;
+  final int postCount;
+  final bool isPrivate;
+  final List<String> savedPosts;
   final DateTime? createdAt;
 
   UserModel({
@@ -16,10 +26,19 @@ class UserModel {
     this.aboutMe = '',
     this.profilePhoto = '',
     this.coverPhoto = '',
+    this.profession = '',
+    this.location = '',
+    this.galleryPhotos = const [],
+    this.followers = const [],
+    this.following = const [],
+    this.birthday = '',
+    this.website = '',
+    this.postCount = 0,
+    this.isPrivate = false,
+    this.savedPosts = const [],
     this.createdAt,
   });
 
-  // Convert to Map for saving to Firestore
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
@@ -28,11 +47,22 @@ class UserModel {
       'aboutMe': aboutMe,
       'profilePhoto': profilePhoto,
       'coverPhoto': coverPhoto,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'profession': profession,
+      'location': location,
+      'galleryPhotos': galleryPhotos,
+      'followers': followers,
+      'following': following,
+      'birthday': birthday,
+      'website': website,
+      'postCount': postCount,
+      'isPrivate': isPrivate,
+      'savedPosts': savedPosts,
+      'createdAt': createdAt != null
+          ? Timestamp.fromDate(createdAt!)
+          : FieldValue.serverTimestamp(),
     };
   }
 
-  // Create UserModel from Firestore Map
   factory UserModel.fromMap(Map<String, dynamic> map) {
     DateTime? createdTime;
     if (map['createdAt'] != null) {
@@ -50,11 +80,32 @@ class UserModel {
       aboutMe: map['aboutMe'] ?? '',
       profilePhoto: map['profilePhoto'] ?? '',
       coverPhoto: map['coverPhoto'] ?? '',
+      profession: map['profession'] ?? '',
+      location: map['location'] ?? '',
+      galleryPhotos: (map['galleryPhotos'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      followers: (map['followers'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      following: (map['following'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      birthday: map['birthday'] ?? '',
+      website: map['website'] ?? '',
+      postCount: (map['postCount'] as int?) ?? 0,
+      isPrivate: (map['isPrivate'] as bool?) ?? false,
+      savedPosts: (map['savedPosts'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       createdAt: createdTime,
     );
   }
 
-  // Create a copy with optional updated values
   UserModel copyWith({
     String? uid,
     String? username,
@@ -62,6 +113,16 @@ class UserModel {
     String? aboutMe,
     String? profilePhoto,
     String? coverPhoto,
+    String? profession,
+    String? location,
+    List<String>? galleryPhotos,
+    List<String>? followers,
+    List<String>? following,
+    String? birthday,
+    String? website,
+    int? postCount,
+    bool? isPrivate,
+    List<String>? savedPosts,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -71,6 +132,16 @@ class UserModel {
       aboutMe: aboutMe ?? this.aboutMe,
       profilePhoto: profilePhoto ?? this.profilePhoto,
       coverPhoto: coverPhoto ?? this.coverPhoto,
+      profession: profession ?? this.profession,
+      location: location ?? this.location,
+      galleryPhotos: galleryPhotos ?? this.galleryPhotos,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+      birthday: birthday ?? this.birthday,
+      website: website ?? this.website,
+      postCount: postCount ?? this.postCount,
+      isPrivate: isPrivate ?? this.isPrivate,
+      savedPosts: savedPosts ?? this.savedPosts,
       createdAt: createdAt ?? this.createdAt,
     );
   }

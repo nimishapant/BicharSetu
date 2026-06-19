@@ -3,129 +3,169 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dashboard_screen.dart';
 import 'loginScreen.dart';
 
+// Colours sampled directly from the logo image
+const Color _bgDark    = Color(0xFF1E1E1E); // charcoal background
+const Color _purpleMid = Color(0xFF5C2ECC); // mid-purple (bridge)
+const Color _purpleTop = Color(0xFF7B44F0); // lighter top arc
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
-
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+  late final AnimationController _ctrl;
+  late final Animation<double> _logoFade;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _textFade;
+  late final Animation<Offset> _textSlide;
 
   @override
   void initState() {
     super.initState();
-
-    // Set up animations
-    _controller = AnimationController(
+    _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1400),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    // Logo: fades + scales in during first 65%
+    _logoFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+    );
+    _logoScale = Tween(begin: 0.72, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.0, 0.65, curve: Curves.easeOutBack),
+      ),
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.75, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    // "BicharSetu" text: slides up + fades in during last 50%
+    _textFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
+    );
+    _textSlide = Tween(
+      begin: const Offset(0, 0.4),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
+      ),
     );
 
-    // Start the animation
-    _controller.forward();
+    _ctrl.forward();
 
-    // Navigate after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        final currentUser = FirebaseAuth.instance.currentUser;
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 500),
-            pageBuilder: (_, __, ___) => currentUser != null
-                ? const DashboardScreen()
-                : const LoginScreen(),
-            transitionsBuilder: (_, animation, __, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-          ),
-        );
-      }
+    // Navigate after animation + a short hold
+    Future.delayed(const Duration(milliseconds: 2800), () {
+      if (!mounted) return;
+      final user = FirebaseAuth.instance.currentUser;
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (_, __, ___) =>
+              user != null ? const DashboardScreen() : const LoginScreen(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+        ),
+      );
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628), // Deep navy background
+      // Exact charcoal from the image
+      backgroundColor: _bgDark,
       body: Center(
         child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: child,
-              ),
+          animation: _ctrl,
+          builder: (context, _) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Large logo image ────────────────────────────────────
+                FadeTransition(
+                  opacity: _logoFade,
+                  child: ScaleTransition(
+                    scale: _logoScale,
+                    child: Image.asset(
+                      'assets/images/bichar_logo.png',
+                      width: MediaQuery.sizeOf(context).width * 0.70,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => _FallbackLogo(),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ── "BicharSetu" wordmark matching the image font ───────
+                FadeTransition(
+                  opacity: _textFade,
+                  child: SlideTransition(
+                    position: _textSlide,
+                    child: const Text(
+                      'BicharSetu',
+                      style: TextStyle(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w800,
+                        color: _purpleMid,
+                        letterSpacing: 0.5,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ── Tagline ─────────────────────────────────────────────
+                FadeTransition(
+                  opacity: _textFade,
+                  child: Text(
+                    'Bridging Thoughts',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _purpleTop.withValues(alpha: 0.55),
+                      letterSpacing: 3.0,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ],
             );
           },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Logo with a soft glow container
-              Container(
-                width: 180,
-                height: 180,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.08),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.blueAccent.withValues(alpha: 0.35),
-                      blurRadius: 60,
-                      spreadRadius: 10,
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(24),
-                child: Image.asset(
-                  'assets/images/bichar_logo.png',
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 28),
-              // App name text
-              const Text(
-                'Bichar Setu',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Bridging Thoughts',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 14,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shown if the asset is missing — matches the logo colour palette
+class _FallbackLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 160,
+      height: 160,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _purpleMid.withValues(alpha: 0.15),
+      ),
+      child: const Icon(
+        Icons.edit_note_rounded,
+        size: 80,
+        color: _purpleMid,
       ),
     );
   }

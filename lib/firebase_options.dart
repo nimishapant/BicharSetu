@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -50,21 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyA3lo9g0WyOEuK5_ZwRFW1dLiM7tnSTBEg',
-    appId: '1:183757970343:android:c425585d203c4c9f903482',
-    messagingSenderId: '183757970343',
-    projectId: 'bicharsetu1',
-    databaseURL: 'https://bicharsetu1-default-rtdb.firebaseio.com',
-    storageBucket: 'bicharsetu1.firebasestorage.app',
+    apiKey: 'AIzaSyBfA4BriDALHOXv9Sxx2sEfDAHsGSAqPPI',
+    appId: '1:126243505392:android:beac52259b7dbcb17d6e35',
+    messagingSenderId: '126243505392',
+    projectId: 'bicharsetu-699d4',
+    storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+  );
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyDJrdg4_Iru8_60n_EBxCJ-8_Mpge6kkOc',
+    appId: '1:126243505392:ios:888f993615fe83087d6e35',
+    messagingSenderId: '126243505392',
+    projectId: 'bicharsetu-699d4',
+    storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+    iosClientId: '126243505392-575328cn9fipqfga59n9on8vlfnccoob.apps.googleusercontent.com',
+    iosBundleId: 'com.example.bicharSetu',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyB2s_3RbCvT9rgKYKjvJKBiHUPNr_JbeT4',
+    appId: '1:126243505392:web:100df642ecc9069f7d6e35',
+    messagingSenderId: '126243505392',
+    projectId: 'bicharsetu-699d4',
+    authDomain: 'bicharsetu-699d4.firebaseapp.com',
+    storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+    measurementId: 'G-ZMGB3FFFNF',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDKlTPC14TmArIMBI96Pmf_gnhNH5ThdLg',
-    appId: '1:183757970343:ios:e33ace056636278c903482',
-    messagingSenderId: '183757970343',
-    projectId: 'bicharsetu1',
-    databaseURL: 'https://bicharsetu1-default-rtdb.firebaseio.com',
-    storageBucket: 'bicharsetu1.firebasestorage.app',
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDJrdg4_Iru8_60n_EBxCJ-8_Mpge6kkOc',
+    appId: '1:126243505392:ios:888f993615fe83087d6e35',
+    messagingSenderId: '126243505392',
+    projectId: 'bicharsetu-699d4',
+    storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+    iosClientId: '126243505392-575328cn9fipqfga59n9on8vlfnccoob.apps.googleusercontent.com',
     iosBundleId: 'com.example.bicharSetu',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyB2s_3RbCvT9rgKYKjvJKBiHUPNr_JbeT4',
+    appId: '1:126243505392:web:f239c0cf850a0f1c7d6e35',
+    messagingSenderId: '126243505392',
+    projectId: 'bicharsetu-699d4',
+    authDomain: 'bicharsetu-699d4.firebaseapp.com',
+    storageBucket: 'bicharsetu-699d4.firebasestorage.app',
+    measurementId: 'G-L3ZGP87C0Y',
   );
 }

@@ -38,6 +38,16 @@ dependencies:
   firebase_auth: ^6.5.1
   cloud_firestore: ^6.4.1
   firebase_storage: ^13.4.1
+  image_picker: ^1.2.2
+  uuid: ^4.5.3
+  cached_network_image: ^3.4.1
+  camera: ^0.12.0+1
+  cloudinary_url_gen: ^1.8.0
+  cloudinary_api: ^1.1.1
+  shared_preferences: ^2.5.3
+  google_sign_in: ^7.2.0
+  http: ^1.6.0
+
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +73,10 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/bichar_logo.png
+    - assets/images/no_notification.png
+    - assets/images/two_factor_shield.png
+    - assets/images/change_password_passkey.png
+    - assets/images/active_session_phone.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
