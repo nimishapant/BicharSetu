@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../model/comment_model.dart';
+import '../model/diary_entry_model.dart';
 import '../model/notification_model.dart';
 import '../model/post_model.dart';
 import '../model/user_model.dart';
@@ -1092,5 +1093,136 @@ class AuthService {
       batch.update(doc.reference, {'isRead': true});
     }
     await batch.commit();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Diary
+  // ─────────────────────────────────────────────────────────
+
+  /// Create a new diary entry.
+  Future<void> createDiaryEntry(DiaryEntryModel entry) async {
+    await _firestore
+        .collection('diary')
+        .doc(entry.entryId)
+        .set(entry.toMap());
+  }
+
+  /// Update an existing diary entry (owner only — enforced client-side).
+  Future<void> updateDiaryEntry(DiaryEntryModel entry) async {
+    await _firestore.collection('diary').doc(entry.entryId).update({
+      'title':     entry.title,
+      'body':      entry.body,
+      'mood':      entry.mood.name,
+      'isPublic':  entry.isPublic,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Delete a diary entry (owner only).
+  Future<void> deleteDiaryEntry(String entryId) async {
+    final uid = currentUid;
+    if (uid == null) return;
+    final doc = await _firestore.collection('diary').doc(entryId).get();
+    if (doc.exists && doc.data()?['uid'] == uid) {
+      await _firestore.collection('diary').doc(entryId).delete();
+    }
+  }
+
+  /// Stream of the current user's diary entries, newest first.
+  /// Sorts in memory to avoid requiring a composite index.
+  Stream<List<DiaryEntryModel>> getMyDiaryStream() {
+    final uid = currentUid;
+    if (uid == null) return const Stream.empty();
+    return _firestore
+        .collection('diary')
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snap) {
+          final entries = snap.docs
+              .map((d) => DiaryEntryModel.fromMap(d.data()))
+              .toList();
+          entries.sort((a, b) => b.entryDate.compareTo(a.entryDate));
+          return entries;
+        });
+  }
+
+  /// Stream of the current user's entries for a specific date.
+  /// Filters in memory to avoid multi-field composite index.
+  Stream<List<DiaryEntryModel>> getDiaryEntriesForDate(DateTime date) {
+    final uid = currentUid;
+    if (uid == null) return const Stream.empty();
+    final day = DateTime(date.year, date.month, date.day);
+    return _firestore
+        .collection('diary')
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snap) {
+          return snap.docs
+              .map((d) => DiaryEntryModel.fromMap(d.data()))
+              .where((e) {
+                final ed = DateTime(
+                    e.entryDate.year, e.entryDate.month, e.entryDate.day);
+                return ed == day;
+              })
+              .toList()
+            ..sort((a, b) => b.entryDate.compareTo(a.entryDate));
+        });
+  }
+
+  /// Stream of public diary entries from all users, newest first.
+  /// Sorts in memory to avoid composite index on isPublic + entryDate.
+  Stream<List<DiaryEntryModel>> getPublicDiaryStream() {
+    return _firestore
+        .collection('diary')
+        .where('isPublic', isEqualTo: true)
+        .limit(50)
+        .snapshots()
+        .map((snap) {
+          final entries = snap.docs
+              .map((d) => DiaryEntryModel.fromMap(d.data()))
+              .toList();
+          entries.sort((a, b) => b.entryDate.compareTo(a.entryDate));
+          return entries;
+        });
+  }
+
+  /// Compute the current streak (consecutive days with at least one entry).
+  Future<int> getDiaryStreak() async {
+    final uid = currentUid;
+    if (uid == null) return 0;
+    final snap = await _firestore
+        .collection('diary')
+        .where('uid', isEqualTo: uid)
+        .limit(60)
+        .get();
+
+    if (snap.docs.isEmpty) return 0;
+
+    final days = snap.docs
+        .map((d) {
+          final ts = d.data()['entryDate'];
+          if (ts is Timestamp) return ts.toDate();
+          return null;
+        })
+        .whereType<DateTime>()
+        .map((d) => DateTime(d.year, d.month, d.day))
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a)); // newest first
+
+    int streak = 0;
+    DateTime cursor = DateTime(
+        DateTime.now().year, DateTime.now().month, DateTime.now().day);
+
+    for (final day in days) {
+      if (day == cursor ||
+          day == cursor.subtract(const Duration(days: 1))) {
+        streak++;
+        cursor = day;
+      } else {
+        break;
+      }
+    }
+    return streak;
   }
 }
