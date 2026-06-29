@@ -16,7 +16,9 @@ const Color _textMid = Color(0xFF7A7690);
 const Color _border = Color(0xFFF0EDF7);
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.userId});
+
+  final String? userId;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -110,10 +112,18 @@ class _ProfileScreenState extends State<ProfileScreen>
     return months[dt.month - 1];
   }
 
+  bool get _isMe =>
+      widget.userId == null || widget.userId == AuthService().currentUid;
+
+  Stream<UserModel?> get _profileStream {
+    if (_isMe) return AuthService().currentUserModelStream;
+    return AuthService().userModelStream(widget.userId!);
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<UserModel?>(
-      stream: AuthService().currentUserModelStream,
+      stream: _profileStream,
       builder: (context, snapshot) {
         final user = snapshot.data;
         final usernameDisplay = user?.username ?? 'Aditya';

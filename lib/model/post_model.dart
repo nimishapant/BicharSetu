@@ -12,6 +12,7 @@ class PostModel {
   final List<String> likes;
   final int commentCount;
   final int shareCount;
+  final int backgroundIndex;
   final DateTime? createdAt;
 
   PostModel({
@@ -26,6 +27,7 @@ class PostModel {
     this.likes = const [],
     this.commentCount = 0,
     this.shareCount = 0,
+    this.backgroundIndex = 0,
     this.createdAt,
   });
 
@@ -43,6 +45,7 @@ class PostModel {
       'likes': likes,
       'commentCount': commentCount,
       'shareCount': shareCount,
+      'backgroundIndex': backgroundIndex,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -72,6 +75,7 @@ class PostModel {
       likes: List<String>.from(map['likes'] ?? []),
       commentCount: map['commentCount'] ?? 0,
       shareCount: map['shareCount'] ?? 0,
+      backgroundIndex: (map['backgroundIndex'] as int?) ?? 0,
       createdAt: createdTime,
     );
   }
@@ -89,6 +93,7 @@ class PostModel {
     List<String>? likes,
     int? commentCount,
     int? shareCount,
+    int? backgroundIndex,
     DateTime? createdAt,
   }) {
     return PostModel(
@@ -103,6 +108,7 @@ class PostModel {
       likes: likes ?? this.likes,
       commentCount: commentCount ?? this.commentCount,
       shareCount: shareCount ?? this.shareCount,
+      backgroundIndex: backgroundIndex ?? this.backgroundIndex,
       createdAt: createdAt ?? this.createdAt,
     );
   }

@@ -71,6 +71,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/bichar_logo.png
+    - assets/images/google_logo.png
     - assets/images/no_notification.png
     - assets/images/two_factor_shield.png
     - assets/images/change_password_passkey.png

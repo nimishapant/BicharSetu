@@ -1,8 +1,9 @@
-     import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'app_navigation_drawer.dart';
+import 'comment_sheet.dart';
 import 'theme/bichar_theme_extension.dart';
 import 'createpost_screen.dart';
 import 'dashboard_app_bar.dart';
@@ -26,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final AnimationController _badgePulseController;
   late final AnimationController _fabPulseController;
-  late final Stream<List<PostModel>> _postsStream;
+  late Stream<List<PostModel>> _postsStream;
 
   @override
   void initState() {
@@ -508,7 +509,7 @@ class _PostCardState extends State<PostCard> {
                   icon: Icons.chat_bubble_outline_rounded,
                   label: '${widget.post.commentCount}',
                   activeColor: accent,
-                  onTap: () {},
+                  onTap: () => CommentSheet.show(context, widget.post.postId),
                 ),
                 const SizedBox(width: 8),
                 _ActionChip(

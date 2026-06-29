@@ -10,6 +10,8 @@ class UserModel {
   final String profession;
   final String location;
   final List<String> galleryPhotos;
+  final List<String> followers;
+  final List<String> following;
   final DateTime? createdAt;
 
   UserModel({
@@ -22,6 +24,8 @@ class UserModel {
     this.profession = '',
     this.location = '',
     this.galleryPhotos = const [],
+    this.followers = const [],
+    this.following = const [],
     this.createdAt,
   });
 
@@ -36,6 +40,8 @@ class UserModel {
       'profession': profession,
       'location': location,
       'galleryPhotos': galleryPhotos,
+      'followers': followers,
+      'following': following,
       'createdAt': createdAt != null
           ? Timestamp.fromDate(createdAt!)
           : FieldValue.serverTimestamp(),
@@ -65,6 +71,14 @@ class UserModel {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      followers: (map['followers'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      following: (map['following'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
       createdAt: createdTime,
     );
   }
@@ -79,6 +93,8 @@ class UserModel {
     String? profession,
     String? location,
     List<String>? galleryPhotos,
+    List<String>? followers,
+    List<String>? following,
     DateTime? createdAt,
   }) {
     return UserModel(
@@ -91,6 +107,8 @@ class UserModel {
       profession: profession ?? this.profession,
       location: location ?? this.location,
       galleryPhotos: galleryPhotos ?? this.galleryPhotos,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
       createdAt: createdAt ?? this.createdAt,
     );
   }

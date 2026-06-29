@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../firebase_options.dart';
+import '../model/comment_model.dart';
 import '../model/post_model.dart';
 import '../model/user_model.dart';
 
@@ -388,5 +389,219 @@ class AuthService {
     if (doc.data()?['uid'] == uid) {
       await docRef.delete();
     }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  User profiles & follow
+  // ─────────────────────────────────────────────────────────
+
+  Stream<UserModel?> userModelStream(String uid) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
+      if (!doc.exists || doc.data() == null) return null;
+      return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+    });
+  }
+
+  Future<void> toggleFollowUser(String targetUid) async {
+    final myUid = currentUid;
+    if (myUid == null || myUid == targetUid) return;
+
+    final myDocRef = _firestore.collection('users').doc(myUid);
+    final targetDocRef = _firestore.collection('users').doc(targetUid);
+
+    final myDoc = await myDocRef.get();
+    if (!myDoc.exists) return;
+
+    final followingList = List<String>.from(myDoc.data()?['following'] ?? []);
+    if (followingList.contains(targetUid)) {
+      await myDocRef.update({
+        'following': FieldValue.arrayRemove([targetUid]),
+      });
+      await targetDocRef.update({
+        'followers': FieldValue.arrayRemove([myUid]),
+      });
+    } else {
+      await myDocRef.update({
+        'following': FieldValue.arrayUnion([targetUid]),
+      });
+      await targetDocRef.update({
+        'followers': FieldValue.arrayUnion([myUid]),
+      });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Comments
+  // ─────────────────────────────────────────────────────────
+
+  Future<void> addComment(CommentModel comment) async {
+    final batch = _firestore.batch();
+
+    final commentDoc = _firestore
+        .collection('posts')
+        .doc(comment.postId)
+        .collection('comments')
+        .doc(comment.commentId);
+    batch.set(commentDoc, comment.toMap());
+
+    final postDoc = _firestore.collection('posts').doc(comment.postId);
+    batch.update(postDoc, {'commentCount': FieldValue.increment(1)});
+
+    await batch.commit();
+  }
+
+  Future<void> addReply(CommentModel reply) async {
+    assert(reply.parentId.isNotEmpty, 'Replies must have a parentId');
+
+    final batch = _firestore.batch();
+
+    final replyDoc = _firestore
+        .collection('posts')
+        .doc(reply.postId)
+        .collection('comments')
+        .doc(reply.parentId)
+        .collection('replies')
+        .doc(reply.commentId);
+    batch.set(replyDoc, reply.toMap());
+
+    final parentDoc = _firestore
+        .collection('posts')
+        .doc(reply.postId)
+        .collection('comments')
+        .doc(reply.parentId);
+    batch.update(parentDoc, {'replyCount': FieldValue.increment(1)});
+
+    await batch.commit();
+  }
+
+  Future<void> deleteComment({
+    required String postId,
+    required String commentId,
+  }) async {
+    final batch = _firestore.batch();
+
+    final commentDoc = _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId);
+    batch.delete(commentDoc);
+
+    final postDoc = _firestore.collection('posts').doc(postId);
+    batch.update(postDoc, {'commentCount': FieldValue.increment(-1)});
+
+    await batch.commit();
+  }
+
+  Future<void> deleteReply({
+    required String postId,
+    required String parentCommentId,
+    required String replyId,
+  }) async {
+    final batch = _firestore.batch();
+
+    final replyDoc = _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(parentCommentId)
+        .collection('replies')
+        .doc(replyId);
+    batch.delete(replyDoc);
+
+    final parentDoc = _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(parentCommentId);
+    batch.update(parentDoc, {'replyCount': FieldValue.increment(-1)});
+
+    await batch.commit();
+  }
+
+  Stream<List<CommentModel>> getCommentsStream(String postId) {
+    return _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => CommentModel.fromMap(d.data())).toList());
+  }
+
+  Stream<List<CommentModel>> getRepliesStream(
+    String postId,
+    String parentCommentId,
+  ) {
+    return _firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(parentCommentId)
+        .collection('replies')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => CommentModel.fromMap(d.data())).toList());
+  }
+
+  Future<void> toggleCommentReaction({
+    required String postId,
+    required String commentId,
+    required String reactionType,
+    String parentCommentId = '',
+  }) async {
+    final uid = currentUid;
+    if (uid == null) return;
+
+    final DocumentReference docRef = parentCommentId.isEmpty
+        ? _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('comments')
+            .doc(commentId)
+        : _firestore
+            .collection('posts')
+            .doc(postId)
+            .collection('comments')
+            .doc(parentCommentId)
+            .collection('replies')
+            .doc(commentId);
+
+    final doc = await docRef.get();
+    if (!doc.exists) return;
+
+    final data = doc.data() as Map<String, dynamic>?;
+    final raw = data?['reactions'] as Map<String, dynamic>? ?? {};
+    final reactions =
+        raw.map((k, v) => MapEntry(k, List<String>.from(v as List)));
+
+    for (final key in reactions.keys.toList()) {
+      reactions[key]?.remove(uid);
+      if (reactions[key]?.isEmpty ?? false) reactions.remove(key);
+    }
+
+    final hadIt = raw[reactionType] != null &&
+        (raw[reactionType] as List).contains(uid);
+    if (!hadIt) {
+      reactions[reactionType] = [...(reactions[reactionType] ?? []), uid];
+    }
+
+    await docRef.update({'reactions': reactions});
+  }
+
+  Future<String> uploadCommentImage(File file) async {
+    if (!await file.exists()) {
+      throw Exception('Image file not found. Please pick the image again.');
+    }
+    final bytes = await file.readAsBytes();
+    return _uploadImage(
+      bytes: bytes,
+      storageFolder: 'comment_images',
+      fileName: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+      firestoreField: '',
+      skipFirestoreUpdate: true,
+    );
   }
 }
