@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'forgetpassword.dart';
-import 'signinscreen.dart';
-import 'repo/auth_service.dart';
-import 'dashboard_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'dashboard_screen.dart';
+import 'forgetpassword.dart';
+import 'repo/auth_service.dart';
+import 'signinscreen.dart';
+import 'theme/auth_widgets.dart';
+import 'theme/bichar_theme_extension.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,11 +31,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF5B2DDE);
-    const borderColor = Color(0xFFC9C9CF);
+    final bichar = context.bichar;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
@@ -45,56 +47,62 @@ class _LoginScreenState extends State<LoginScreen> {
                 Image.asset(
                   'assets/images/bichar_logo.png',
                   height: 96,
-                  errorBuilder: (_, __, ___) => const Icon(
+                  errorBuilder: (_, __, ___) => Icon(
                     Icons.account_balance,
                     size: 96,
-                    color: primaryColor,
+                    color: bichar.accent,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'BicharSetu',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF352063),
+                    color: bichar.textPrimary,
                   ),
                 ),
-                const Text(
+                Text(
                   'A platform for thoughts that connect',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF59595F),
+                    color: bichar.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 44),
-                const Text(
+                Text(
                   'Welcome back!',
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1E1F24),
+                    color: bichar.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Login to continue to your account',
-                  style: TextStyle(fontSize: 24, color: Color(0xFF76767D)),
+                  style: TextStyle(
+                    fontSize: 22,
+                    color: bichar.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.text,
                   textInputAction: TextInputAction.next,
-                  style: const TextStyle(fontSize: 18),
-                  decoration: _fieldDecoration(
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: bichar.textPrimary,
+                  ),
+                  decoration: authFieldDecoration(
+                    context,
                     label: 'Email or Username',
                     hint: 'Enter your email or username',
-                    icon: Icons.mail_outline,
-                    borderColor: borderColor,
+                    prefixIcon: Icons.mail_outline,
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -108,13 +116,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   textInputAction: TextInputAction.done,
-                  style: const TextStyle(fontSize: 18),
-                  decoration: _fieldDecoration(
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: bichar.textPrimary,
+                  ),
+                  decoration: authFieldDecoration(
+                    context,
                     label: 'Password',
                     hint: 'Enter your password',
-                    icon: Icons.lock_outline,
-                    borderColor: borderColor,
-                    suffix: IconButton(
+                    prefixIcon: Icons.lock_outline,
+                    suffixIcon: IconButton(
                       onPressed: () {
                         setState(() {
                           _obscurePassword = !_obscurePassword;
@@ -124,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
-                        color: const Color(0xFF6B6C74),
+                        color: bichar.mutedIcon,
                       ),
                     ),
                   ),
@@ -148,10 +159,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             );
                           },
-                    child: const Text(
+                    child: Text(
                       'Forgot Password?',
                       style: TextStyle(
-                        color: primaryColor,
+                        color: bichar.accent,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
@@ -159,163 +170,33 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 2),
-                SizedBox(
-                  height: 58,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.6,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
+                AuthPrimaryButton(
+                  label: 'Login',
+                  isLoading: _isLoading,
+                  onPressed: _handleLogin,
                 ),
                 const SizedBox(height: 26),
-                Row(
-                  children: const [
-                    Expanded(
-                      child: Divider(
-                        color: Color(0xFFB6B6BC),
-                        thickness: 1.4,
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        'or continue with',
-                        style: TextStyle(
-                          color: Color(0xFF7D7D83),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(
-                        color: Color(0xFFB6B6BC),
-                        thickness: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
+                const AuthDividerLabel(),
                 const SizedBox(height: 20),
-                OutlinedButton(
-                  onPressed: _isLoading ? null : () {},
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: borderColor),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      _GoogleIcon(),
-                      SizedBox(width: 14),
-                      Text(
-                        'Continue with Google',
-                        style: TextStyle(
-                          color: Color(0xFF1F1F24),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                AuthGoogleButton(onPressed: _isLoading ? null : () {}),
                 const SizedBox(height: 30),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Don’t have an account? ",
-                      style: TextStyle(
-                        color: Color(0xFF5A5A61),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _isLoading
-                          ? null
-                          : () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const SignInScreen(),
-                                ),
-                              );
-                            },
-                      child: const Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    ),
-                  ],
+                AuthFooterLink(
+                  prefix: "Don't have an account? ",
+                  linkText: 'Sign Up',
+                  onTap: _isLoading
+                      ? null
+                      : () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SignInScreen(),
+                            ),
+                          );
+                        },
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  InputDecoration _fieldDecoration({
-    required String label,
-    required String hint,
-    required IconData icon,
-    required Color borderColor,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(
-        color: Color(0xFF5C3E8E),
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
-      ),
-      hintText: hint,
-      hintStyle: const TextStyle(fontSize: 18, color: Color(0xFF8D8D95)),
-      prefixIcon: Icon(icon, color: const Color(0xFF6B6C74)),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: const Color(0xFFF5F5F7),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: borderColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: borderColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF5B2DDE), width: 1.4),
       ),
     );
   }
@@ -340,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Logged in successfully as $emailOrUsername'),
-          backgroundColor: const Color(0xFF5B2DDE),
+          backgroundColor: context.bichar.accent,
         ),
       );
 
@@ -373,29 +254,3 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 }
-
-class _GoogleIcon extends StatelessWidget {
-  const _GoogleIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(3),
-      child: Image.asset(
-        'assets/images/google_logo.png',
-        width: 16,
-        height: 16,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => const Text(
-          'G',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFFDB4437),
-          ),
-        ),
-      ),
-    );
-  }
-}
-

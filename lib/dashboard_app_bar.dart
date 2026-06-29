@@ -70,6 +70,8 @@ class _HeaderProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+
     return StreamBuilder<UserModel?>(
       stream: AuthService().currentUserModelStream,
       builder: (context, snapshot) {
@@ -84,16 +86,16 @@ class _HeaderProfileAvatar extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFE8E8EC),
+                color: bichar.searchFieldBackground,
                 border: Border.all(
                   color: const Color(0xFFE53935),
                   width: 2,
                 ),
               ),
               child: photoUrl.isEmpty
-                  ? const Icon(
+                  ? Icon(
                       Icons.person_rounded,
-                      color: Color(0xFFB0A8B8),
+                      color: bichar.mutedIcon,
                       size: 26,
                     )
                   : ClipOval(
@@ -103,9 +105,9 @@ class _HeaderProfileAvatar extends StatelessWidget {
                         height: 40,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
+                          return Icon(
                             Icons.person_rounded,
-                            color: Color(0xFFB0A8B8),
+                            color: bichar.mutedIcon,
                             size: 26,
                           );
                         },

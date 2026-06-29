@@ -8,10 +8,8 @@ import 'model/user_model.dart';
 import 'profile_screen.dart';
 import 'repo/auth_service.dart';
 
-const Color _drawerBg = Color(0xFFF3F3F5);
 const Color _textDark = Color(0xFF1D1A29);
 const Color _textMid = Color(0xFF7A7690);
-const Color _divider = Color(0xFFE4E4E8);
 
 // Help Center palette (aligned with app settings / Material 3 surfaces)
 const Color _helpBg = Color(0xFFF7F7FB);
@@ -149,7 +147,7 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                     onAddAccount: () => _showComingSoon('Add account'),
                   ),
                   const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 1, color: _divider),
+                  Divider(height: 1, thickness: 1, color: bichar.border),
                   const SizedBox(height: 12),
                   const _SectionLabel('EXPLORE'),
                   const SizedBox(height: 4),
@@ -161,7 +159,7 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Divider(height: 1, thickness: 1, color: _divider),
+                  Divider(height: 1, thickness: 1, color: bichar.border),
                   const SizedBox(height: 8),
                   _DrawerTile(
                     icon: Icons.settings_outlined,
@@ -188,7 +186,7 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                     }),
                   ),
                   const SizedBox(height: 8),
-                  const Divider(height: 1, thickness: 1, color: _divider),
+                  Divider(height: 1, thickness: 1, color: bichar.border),
                   const SizedBox(height: 8),
                   _DrawerTile(
                     icon: Icons.logout_rounded,
@@ -1071,6 +1069,8 @@ class _DrawerProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+
     return InkWell(
       onTap: onProfileTap,
       borderRadius: BorderRadius.circular(12),
@@ -1084,14 +1084,14 @@ class _DrawerProfileHeader extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFE8E8EC),
-                border: Border.all(color: const Color(0xFFD0D0D6), width: 1.5),
+                color: bichar.searchFieldBackground,
+                border: Border.all(color: bichar.border, width: 1.5),
               ),
               child: profilePhotoUrl.isEmpty
-                  ? const Icon(
+                  ? Icon(
                       Icons.person_rounded,
                       size: 34,
-                      color: Color(0xFFB8B4C0),
+                      color: bichar.mutedIcon,
                     )
                   : ClipOval(
                       child: Image.network(
@@ -1100,10 +1100,10 @@ class _DrawerProfileHeader extends StatelessWidget {
                         width: 56,
                         height: 56,
                         errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
+                          return Icon(
                             Icons.person_rounded,
                             size: 34,
-                            color: Color(0xFFB8B4C0),
+                            color: bichar.mutedIcon,
                           );
                         },
                       ),
@@ -1122,18 +1122,18 @@ class _DrawerProfileHeader extends StatelessWidget {
                           children: [
                             Text(
                               displayName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: _textDark,
+                                color: bichar.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               handle,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: _textMid,
+                                color: bichar.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -1145,12 +1145,12 @@ class _DrawerProfileHeader extends StatelessWidget {
                         child: InkWell(
                           onTap: onAddAccount,
                           borderRadius: BorderRadius.circular(20),
-                          child: const Padding(
-                            padding: EdgeInsets.all(6),
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
                             child: Icon(
                               Icons.person_add_alt_1_outlined,
                               size: 22,
-                              color: _textDark,
+                              color: bichar.textPrimary,
                             ),
                           ),
                         ),
@@ -1182,11 +1182,13 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+
     return Text(
       label,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
-        color: _textMid,
+        color: bichar.textSecondary,
         fontWeight: FontWeight.w500,
       ),
     );
@@ -1200,15 +1202,17 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
-          color: _textMid,
+          color: bichar.textSecondary,
         ),
       ),
     );
@@ -1220,18 +1224,22 @@ class _DrawerTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.iconColor = _textDark,
-    this.labelColor = _textDark,
+    this.iconColor,
+    this.labelColor,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final Color iconColor;
-  final Color labelColor;
+  final Color? iconColor;
+  final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
+    final bichar = context.bichar;
+    final effectiveIconColor = iconColor ?? bichar.textPrimary;
+    final effectiveLabelColor = labelColor ?? bichar.textPrimary;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1241,7 +1249,7 @@ class _DrawerTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 11),
           child: Row(
             children: [
-              Icon(icon, size: 24, color: iconColor),
+              Icon(icon, size: 24, color: effectiveIconColor),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
@@ -1249,7 +1257,7 @@ class _DrawerTile extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: labelColor,
+                    color: effectiveLabelColor,
                   ),
                 ),
               ),
