@@ -6,7 +6,6 @@ import 'loginScreen.dart';
 // Colours sampled directly from the logo image
 const Color _bgDark    = Color(0xFF1E1E1E); // charcoal background
 const Color _purpleMid = Color(0xFF5C2ECC); // mid-purple (bridge)
-const Color _purpleTop = Color(0xFF7B44F0); // lighter top arc
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -19,8 +18,6 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _ctrl;
   late final Animation<double> _logoFade;
   late final Animation<double> _logoScale;
-  late final Animation<double> _textFade;
-  late final Animation<Offset> _textSlide;
 
   @override
   void initState() {
@@ -39,21 +36,6 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(
         parent: _ctrl,
         curve: const Interval(0.0, 0.65, curve: Curves.easeOutBack),
-      ),
-    );
-
-    // "BicharSetu" text: slides up + fades in during last 50%
-    _textFade = CurvedAnimation(
-      parent: _ctrl,
-      curve: const Interval(0.5, 1.0, curve: Curves.easeOut),
-    );
-    _textSlide = Tween(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _ctrl,
-        curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
       ),
     );
 
@@ -99,49 +81,14 @@ class _SplashScreenState extends State<SplashScreen>
                   child: ScaleTransition(
                     scale: _logoScale,
                     child: Image.asset(
-                      'assets/images/bichar_logo.png',
-                      width: MediaQuery.sizeOf(context).width * 0.70,
+                      'assets/images/logo.png',
+                      width: MediaQuery.sizeOf(context).width * 0.85,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => _FallbackLogo(),
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 8),
-
-                // ── "BicharSetu" wordmark matching the image font ───────
-                FadeTransition(
-                  opacity: _textFade,
-                  child: SlideTransition(
-                    position: _textSlide,
-                    child: const Text(
-                      'BicharSetu',
-                      style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.w800,
-                        color: _purpleMid,
-                        letterSpacing: 0.5,
-                        height: 1.1,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ── Tagline ─────────────────────────────────────────────
-                FadeTransition(
-                  opacity: _textFade,
-                  child: Text(
-                    'Bridging Thoughts',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: _purpleTop.withValues(alpha: 0.55),
-                      letterSpacing: 3.0,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
+                // Text is now part of the image
               ],
             );
           },
