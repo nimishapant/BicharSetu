@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'app_settings_screen.dart';
 import 'article_screen.dart';
 import 'saved_posts_screen.dart';
+import 'trending_screen.dart';
 import 'theme/bichar_theme_extension.dart';
 import 'books.dart';
 import 'diary_screen.dart';
@@ -47,6 +48,14 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
   }
 
   void _onExploreItemTap(_DrawerItem item) {
+    if (item.label == 'Trending') {
+      _closeAndThen(() {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const TrendingScreen()),
+        );
+      });
+      return;
+    }
     if (item.label == 'Saved Posts') {
       _closeAndThen(() {
         Navigator.of(context).push(
