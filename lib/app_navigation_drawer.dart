@@ -1130,7 +1130,6 @@ const List<_DrawerItem> _exploreItems = [
   _DrawerItem(icon: Icons.article_outlined, label: 'Articles'),
   _DrawerItem(icon: Icons.menu_book_rounded, label: 'Books'),
   _DrawerItem(icon: Icons.auto_stories_rounded, label: 'Diary'),
-  _DrawerItem(icon: Icons.map_outlined, label: 'Story Map'),
   _DrawerItem(icon: Icons.local_fire_department_rounded, label: 'Trending'),
 ];
 
