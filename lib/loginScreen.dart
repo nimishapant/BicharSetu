@@ -59,8 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     children: [
                       Image.asset(
-                        'assets/images/bichar_logo.png',
-                        width: size.width * 0.52,
+                        'assets/images/logo.png',
+                        width: size.width * 0.75,
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) => Icon(
                           Icons.edit_note_rounded,
@@ -68,17 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: _purpleMid,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'BicharSetu',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w800,
-                          color: _purpleMid,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 12),
                       Text(
                         'A platform for thoughts that connect',
                         style: TextStyle(

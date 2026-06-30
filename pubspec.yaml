@@ -72,6 +72,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/images/logo.png
     - assets/images/bichar_logo.png
     - assets/images/no_notification.png
     - assets/images/two_factor_shield.png
