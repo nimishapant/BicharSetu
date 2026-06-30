@@ -25,17 +25,17 @@ class TrendingScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(28),
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFFFF5F6D),
-                      Color(0xFFFFC371),
+                      bichar.accent,
+                      bichar.accent.withValues(alpha: 0.8),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFF5F6D).withValues(alpha: 0.3),
+                      color: bichar.accent.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 8),
                     ),
@@ -153,11 +153,11 @@ class TrendingScreen extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: _getRankColor(index),
+                                  color: _getRankColor(index, bichar),
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: _getRankColor(index).withValues(alpha: 0.3),
+                                      color: _getRankColor(index, bichar).withValues(alpha: 0.3),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     ),
@@ -187,10 +187,10 @@ class TrendingScreen extends StatelessWidget {
     );
   }
 
-  Color _getRankColor(int index) {
+  Color _getRankColor(int index, BicharTheme bichar) {
     if (index == 0) return const Color(0xFFFFD700); // Gold
     if (index == 1) return const Color(0xFFC0C0C0); // Silver
     if (index == 2) return const Color(0xFFCD7F32); // Bronze
-    return const Color(0xFFFF5F6D); // Default Trending Red/Pink
+    return bichar.accent; // Blue theme
   }
 }
