@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'app_settings_screen.dart';
+import 'article_screen.dart';
 import 'theme/bichar_theme_extension.dart';
 import 'books.dart';
 import 'diary_screen.dart';
@@ -45,6 +46,14 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
   }
 
   void _onExploreItemTap(_DrawerItem item) {
+    if (item.label == 'Articles') {
+      _closeAndThen(() {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const ArticleScreen()),
+        );
+      });
+      return;
+    }
     if (item.label == 'Diary') {
       _closeAndThen(() {
         Navigator.of(context).push(
