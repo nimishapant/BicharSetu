@@ -9,21 +9,33 @@ import 'theme/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   try {
     await GoogleSignIn.instance.initialize();
-  } catch (_) {go
-  await ThemeController().load();
-  runApp(const MyApp());
+  } catch (_) {
+    // Ignore Google Sign-In initialization errors
+  }
+
+  final themeController = ThemeController();
+  await themeController.load();
+
+  runApp(MyApp(themeController: themeController));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ThemeController themeController;
+
+  const MyApp({
+    super.key,
+    required this.themeController,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final themeController = ThemeController();
-
     return ListenableBuilder(
       listenable: themeController,
       builder: (context, _) {
