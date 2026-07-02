@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'account_status_screen.dart';
+import 'experience_languages_screen.dart';
 import 'loginScreen.dart';
+import 'notification_screen.dart';
 import 'premium_settings_screen.dart';
+import 'privacy_safety_screen.dart';
 import 'profileedit_screen.dart';
 import 'repo/auth_service.dart';
+import 'resources_legal_screen.dart';
 import 'security_settings_screen.dart';
+import 'studio/studio_hub_screen.dart';
 import 'theme/bichar_theme_extension.dart';
 import 'theme/theme_controller.dart';
 import 'widgets/settings/dark_mode_card.dart';
@@ -114,11 +120,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             );
           },
         ),
-        const _SettingItem(
+        _SettingItem(
           icon: Icons.verified_user_outlined,
           title: 'Account Status',
           subtitle:
               'Check your current account standing and review any potential violations or restrictions.',
+          onTap: () => AccountStatusScreen.open(context),
         ),
         _SettingItem(
           icon: Icons.lock_outline_rounded,
@@ -137,47 +144,60 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
               'Manage your BicharSetu Pro features including AI Narration, extended story editing, and premium badges.',
           onTap: () => PremiumSettingsScreen.open(context),
         ),
-        const _SettingItem(
+        _SettingItem(
           icon: Icons.auto_awesome_outlined,
           title: 'BicharSetu Studio',
           subtitle:
               'Access your creator dashboard, track story analytics, and manage your wallet and earnings.',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const StudioHubScreen(),
+            ),
+          ),
         ),
       ];
 
-  List<_SettingItem> _privacyItems() => [
-        const _SettingItem(
+  List<_SettingItem> _privacyItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.shield_outlined,
           title: 'Privacy and safety',
           subtitle:
               'Manage the content you see and share, including blocked accounts, muted writers, and story visibility.',
+          onTap: () => PrivacySafetyScreen.open(context),
         ),
       ];
 
-  List<_SettingItem> _communicationItems() => [
-        const _SettingItem(
+  List<_SettingItem> _communicationItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.notifications_none_rounded,
           title: 'Notifications',
           subtitle:
               'Control alerts for appreciation, relekhans, comments, and important platform updates.',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const NotificationScreen(),
+            ),
+          ),
         ),
       ];
 
-  List<_SettingItem> _localizationItems() => [
-        const _SettingItem(
+  List<_SettingItem> _localizationItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.accessibility_new_rounded,
           title: 'Experience & Languages',
           subtitle:
               'Standardize your reading experience with theme preferences and interface language settings.',
+          onTap: () => ExperienceLanguagesScreen.open(context),
         ),
       ];
 
-  List<_SettingItem> _supportItems() => [
-        const _SettingItem(
+  List<_SettingItem> _supportItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.more_horiz_rounded,
           title: 'Resources & Legal',
           subtitle:
               'Explore the BicharSetu help center, community guidelines, and professional support.',
+          onTap: () => ResourcesLegalScreen.open(context),
         ),
       ];
 
@@ -303,22 +323,22 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           _buildSection(
                             title: 'Privacy',
                             icon: Icons.shield_outlined,
-                            items: _privacyItems(),
+                            items: _privacyItems(context),
                           ),
                           _buildSection(
                             title: 'Communication',
                             icon: Icons.notifications_none_rounded,
-                            items: _communicationItems(),
+                            items: _communicationItems(context),
                           ),
                           _buildSection(
                             title: 'Localization',
                             icon: Icons.language_rounded,
-                            items: _localizationItems(),
+                            items: _localizationItems(context),
                           ),
                           _buildSection(
                             title: 'Support',
                             icon: Icons.support_agent_rounded,
-                            items: _supportItems(),
+                            items: _supportItems(context),
                           ),
                           if (_showLogout)
                             SettingsLogoutSection(onLogout: _onLogout),

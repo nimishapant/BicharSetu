@@ -27,15 +27,37 @@ class SettingsHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            onPressed: onBack,
-            icon: Icon(Icons.arrow_back_rounded, color: bichar.textPrimary),
-            style: IconButton.styleFrom(
-              backgroundColor: bichar.cardBackground.withValues(alpha: 0.8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                onPressed: onBack,
+                icon: Icon(Icons.arrow_back_rounded, color: bichar.textPrimary),
+                style: IconButton.styleFrom(
+                  backgroundColor: bichar.cardBackground.withValues(alpha: 0.8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
-            ),
+              IconButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      content: Text('Additional settings options — coming soon'),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.more_horiz_rounded, color: bichar.textPrimary),
+                style: IconButton.styleFrom(
+                  backgroundColor: bichar.cardBackground.withValues(alpha: 0.8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Container(

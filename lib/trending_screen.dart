@@ -72,7 +72,24 @@ class TrendingScreen extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(width: 40), // Spacer for centering
+                        GestureDetector(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                behavior: SnackBarBehavior.floating,
+                                content: Text('Trending options — coming soon'),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
