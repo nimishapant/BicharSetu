@@ -62,7 +62,6 @@ class _FeedBottomNavState extends State<FeedBottomNav> {
                   onTapDown: (_) => setState(() => _searchPressed = true),
                   onTapUp: (_) => setState(() => _searchPressed = false),
                   onTapCancel: () => setState(() => _searchPressed = false),
-                  onTap: () => widget.onItemTap(1),
                   child: AnimatedScale(
                     scale: _searchPressed ? 0.92 : 1.0,
                     duration: const Duration(milliseconds: 140),
@@ -73,7 +72,7 @@ class _FeedBottomNavState extends State<FeedBottomNav> {
                       label: 'Search',
                       index: 1,
                       selectedIndex: widget.selectedIndex,
-                      onTap: (_) {},
+                      onTap: widget.onItemTap,
                       isWrappedInExpanded: true,
                     ),
                   ),

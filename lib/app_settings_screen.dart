@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'account_status_screen.dart';
+import 'experience_languages_screen.dart';
 import 'loginScreen.dart';
+import 'privacy_safety_screen.dart';
+import 'resources_legal_screen.dart';
+import 'theme/app_localizations.dart';
+import 'notification_screen.dart';
 import 'premium_settings_screen.dart';
 import 'profileedit_screen.dart';
 import 'repo/auth_service.dart';
@@ -114,11 +120,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
             );
           },
         ),
-        const _SettingItem(
+        _SettingItem(
           icon: Icons.verified_user_outlined,
           title: 'Account Status',
           subtitle:
               'Check your current account standing and review any potential violations or restrictions.',
+          onTap: () => AccountStatusScreen.open(context),
         ),
         _SettingItem(
           icon: Icons.lock_outline_rounded,
@@ -145,39 +152,43 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         ),
       ];
 
-  List<_SettingItem> _privacyItems() => [
-        const _SettingItem(
+  List<_SettingItem> _privacyItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.shield_outlined,
           title: 'Privacy and safety',
           subtitle:
               'Manage the content you see and share, including blocked accounts, muted writers, and story visibility.',
+          onTap: () => PrivacySafetyScreen.open(context),
         ),
       ];
 
-  List<_SettingItem> _communicationItems() => [
-        const _SettingItem(
+  List<_SettingItem> _communicationItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.notifications_none_rounded,
-          title: 'Notifications',
+          title: context.l10n.notifications,
           subtitle:
               'Control alerts for appreciation, relekhans, comments, and important platform updates.',
+          onTap: () => NotificationScreen.open(context),
         ),
       ];
 
-  List<_SettingItem> _localizationItems() => [
-        const _SettingItem(
+  List<_SettingItem> _localizationItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.accessibility_new_rounded,
-          title: 'Experience & Languages',
+          title: context.l10n.experienceLanguages,
           subtitle:
               'Standardize your reading experience with theme preferences and interface language settings.',
+          onTap: () => ExperienceLanguagesScreen.open(context),
         ),
       ];
 
-  List<_SettingItem> _supportItems() => [
-        const _SettingItem(
+  List<_SettingItem> _supportItems(BuildContext context) => [
+        _SettingItem(
           icon: Icons.more_horiz_rounded,
           title: 'Resources & Legal',
           subtitle:
               'Explore the BicharSetu help center, community guidelines, and professional support.',
+          onTap: () => ResourcesLegalScreen.open(context),
         ),
       ];
 
@@ -284,12 +295,12 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                           ),
                           const SizedBox(height: 22),
                           _buildSection(
-                            title: 'Account',
+                            title: context.l10n.account,
                             icon: Icons.person_outline_rounded,
                             items: _accountItems(context),
                           ),
                           _buildSection(
-                            title: 'Premium Services',
+                            title: context.l10n.premium,
                             icon: Icons.workspace_premium_outlined,
                             items: _premiumItems(context),
                           ),
@@ -301,24 +312,24 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
                               onChanged: _themeController.setDarkModeEnabled,
                             ),
                           _buildSection(
-                            title: 'Privacy',
+                            title: context.l10n.privacy,
                             icon: Icons.shield_outlined,
-                            items: _privacyItems(),
+                            items: _privacyItems(context),
                           ),
                           _buildSection(
-                            title: 'Communication',
+                            title: context.l10n.communication,
                             icon: Icons.notifications_none_rounded,
-                            items: _communicationItems(),
+                            items: _communicationItems(context),
                           ),
                           _buildSection(
-                            title: 'Localization',
+                            title: context.l10n.localization,
                             icon: Icons.language_rounded,
-                            items: _localizationItems(),
+                            items: _localizationItems(context),
                           ),
                           _buildSection(
-                            title: 'Support',
+                            title: context.l10n.support,
                             icon: Icons.support_agent_rounded,
-                            items: _supportItems(),
+                            items: _supportItems(context),
                           ),
                           if (_showLogout)
                             SettingsLogoutSection(onLogout: _onLogout),

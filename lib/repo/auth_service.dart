@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../model/account_status_model.dart';
 import '../model/comment_model.dart';
 import '../model/diary_entry_model.dart';
 import '../model/notification_model.dart';
@@ -80,6 +81,10 @@ class AuthService {
 
     await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
 
+    // Initialize Account Status
+    final initialStatus = AccountStatusModel.initial(user.uid);
+    await _firestore.collection('account_status').doc(user.uid).set(initialStatus.toMap());
+
     return userModel;
   }
 
@@ -135,6 +140,11 @@ class AuthService {
         createdAt: DateTime.now(),
       );
       await _firestore.collection('users').doc(user.uid).set(fallbackModel.toMap());
+      
+      // Initialize Account Status
+      final initialStatus = AccountStatusModel.initial(user.uid);
+      await _firestore.collection('account_status').doc(user.uid).set(initialStatus.toMap());
+
       return fallbackModel;
     }
 
@@ -531,6 +541,10 @@ class AuthService {
           createdAt: DateTime.now(),
         );
         await _firestore.collection('users').doc(user.uid).set(userModel.toMap());
+
+        // Initialize Account Status
+        final initialStatus = AccountStatusModel.initial(user.uid);
+        await _firestore.collection('account_status').doc(user.uid).set(initialStatus.toMap());
       }
     }
 
@@ -968,6 +982,80 @@ class AuthService {
         .where('uid', isEqualTo: uid)
         .snapshots()
         .map((snapshot) => snapshot.size);
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  Account Status
+  // ─────────────────────────────────────────────────────────
+
+  Stream<AccountStatusModel?> getAccountStatusStream(String uid) {
+    return _firestore
+        .collection('account_status')
+        .doc(uid)
+        .snapshots()
+        .asyncMap((doc) async {
+      if (!doc.exists) {
+        // Create if missing (for legacy users)
+        final initial = AccountStatusModel.initial(uid);
+        await _firestore.collection('account_status').doc(uid).set(initial.toMap());
+        return initial;
+      }
+      return AccountStatusModel.fromMap(doc.data()!);
+    });
+  }
+
+  Future<void> updateAccountStatus({
+    required String uid,
+    required AccountStanding standing,
+    required String message,
+    String? reason,
+    String? actionType,
+  }) async {
+    final statusDoc = _firestore.collection('account_status').doc(uid);
+    final snap = await statusDoc.get();
+    
+    int newWarningCount = 0;
+    List<AccountAction> actions = [];
+    
+    if (snap.exists) {
+      final current = AccountStatusModel.fromMap(snap.data()!);
+      newWarningCount = current.warningCount + (standing == AccountStanding.warning ? 1 : 0);
+      actions = current.actions;
+    }
+
+    if (reason != null && actionType != null) {
+      actions.add(AccountAction(
+        reason: reason,
+        timestamp: DateTime.now(),
+        type: actionType,
+      ));
+    }
+
+    final newStatus = AccountStatusModel(
+      uid: uid,
+      standing: standing,
+      warningCount: newWarningCount,
+      message: message,
+      actions: actions,
+      updatedAt: DateTime.now(),
+    );
+
+    await statusDoc.set(newStatus.toMap());
+
+    // Send notification
+    await _sendNotification(
+      NotificationModel(
+        notificationId: 'account_status_${DateTime.now().millisecondsSinceEpoch}',
+        recipientUid: uid,
+        senderUid: 'system',
+        senderUsername: 'BicharSetu',
+        senderProfilePhoto: '',
+        type: NotificationType.accountStatus,
+        postId: '', // Not linked to a post
+        postPreview: message,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────────────────

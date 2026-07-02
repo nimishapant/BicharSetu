@@ -69,8 +69,16 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     final bichar = context.bichar;
 
-    return Scaffold(
-      key: _scaffoldKey,
+    return PopScope(
+      canPop: _selectedIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
       backgroundColor: bichar.drawerBackground,
       drawer: const AppNavigationDrawer(),
       drawerEnableOpenDragGesture: true,
@@ -282,6 +290,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           });
         },
       ),
-    );
-  }
+    ),
+  );
+}
 }

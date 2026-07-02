@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'account_status_screen.dart';
 import 'comment_sheet.dart';
 import 'model/notification_model.dart';
 import 'repo/auth_service.dart';
@@ -8,6 +9,14 @@ class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key, this.showBackButton = true});
 
   final bool showBackButton;
+
+  static Future<void> open(BuildContext context, {bool showBackButton = true}) {
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => NotificationScreen(showBackButton: showBackButton),
+      ),
+    );
+  }
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -75,8 +84,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               notifications[index].notificationId,
                             );
                           }
-                          // Open the comment sheet for the related post
-                          if (context.mounted) {
+
+                          if (!context.mounted) return;
+
+                          if (notifications[index].type ==
+                              NotificationType.accountStatus) {
+                            await AccountStatusScreen.open(context);
+                          } else {
+                            // Open the comment sheet for the related post
                             await CommentSheet.show(
                               context,
                               notifications[index].postId,
@@ -178,6 +193,7 @@ class _NotificationTile extends StatelessWidget {
     final bichar = context.bichar;
     final isLike = notification.type == NotificationType.like;
     final isMention = notification.type == NotificationType.mention;
+    final isAccount = notification.type == NotificationType.accountStatus;
     final isUnread = !notification.isRead;
 
     // Badge icon + color per type
@@ -185,19 +201,25 @@ class _NotificationTile extends StatelessWidget {
         ? Colors.redAccent
         : isMention
             ? const Color(0xFFF59E0B) // amber for mention
-            : bichar.accent;
+            : isAccount
+                ? Colors.blueAccent
+                : bichar.accent;
     final badgeIcon = isLike
         ? Icons.favorite_rounded
         : isMention
             ? Icons.alternate_email_rounded
-            : Icons.chat_bubble_rounded;
+            : isAccount
+                ? Icons.verified_user_rounded
+                : Icons.chat_bubble_rounded;
 
     // Action text per type
     final actionText = isLike
         ? ' liked your post'
         : isMention
             ? ' mentioned you'
-            : ' commented on your post';
+            : isAccount
+                ? ' sent an update'
+                : ' commented on your post';
 
     return InkWell(
       onTap: onTap,
