@@ -6,42 +6,61 @@ import 'bichar_theme_extension.dart';
 class AppTheme {
   AppTheme._();
 
-  static const Color _accent = Color(0xFF6A3DE8);
-  static const Color _accentLight = Color(0xFF8B6EFF);
+  static ThemeData light({
+    Color accentColor = const Color(0xFF6A3DE8),
+    String? fontFamily,
+  }) {
+    final accentLight = accentColor.withValues(alpha: 0.8);
+    final bicharLight = BicharTheme.light.copyWith(
+      accent: accentColor,
+      accentLight: accentLight,
+      chipBackground: accentColor.withValues(alpha: 0.1),
+    );
 
-  static ThemeData get light {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _accent,
+      seedColor: accentColor,
       brightness: Brightness.light,
       surface: Colors.white,
-      onSurface: BicharTheme.light.textPrimary,
-      onSurfaceVariant: BicharTheme.light.textSecondary,
-      outline: BicharTheme.light.border,
+      onSurface: bicharLight.textPrimary,
+      onSurfaceVariant: bicharLight.textSecondary,
+      outline: bicharLight.border,
     );
 
     return _baseTheme(
       colorScheme: colorScheme,
       brightness: Brightness.light,
       scaffoldBackground: const Color(0xFFF7F7FB),
-      extension: BicharTheme.light,
+      extension: bicharLight,
+      fontFamily: fontFamily,
     );
   }
 
-  static ThemeData get dark {
+  static ThemeData dark({
+    Color accentColor = const Color(0xFF8B6EFF),
+    String? fontFamily,
+  }) {
+    final accentLight = accentColor.withValues(alpha: 0.8);
+    final bicharDark = BicharTheme.dark.copyWith(
+      accent: accentColor,
+      accentLight: accentLight,
+      chipBackground: accentColor.withValues(alpha: 0.2),
+    );
+
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _accentLight,
+      seedColor: accentColor,
       brightness: Brightness.dark,
       surface: const Color(0xFF1E1A2A),
-      onSurface: BicharTheme.dark.textPrimary,
-      onSurfaceVariant: BicharTheme.dark.textSecondary,
-      outline: BicharTheme.dark.border,
+      onSurface: bicharDark.textPrimary,
+      onSurfaceVariant: bicharDark.textSecondary,
+      outline: bicharDark.border,
     );
 
     return _baseTheme(
       colorScheme: colorScheme,
       brightness: Brightness.dark,
       scaffoldBackground: const Color(0xFF121018),
-      extension: BicharTheme.dark,
+      extension: bicharDark,
+      fontFamily: fontFamily,
     );
   }
 
@@ -50,14 +69,17 @@ class AppTheme {
     required Brightness brightness,
     required Color scaffoldBackground,
     required BicharTheme extension,
+    String? fontFamily,
   }) {
     final isDark = brightness == Brightness.dark;
+    final font = fontFamily == 'Default' ? null : fontFamily;
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: scaffoldBackground,
+      fontFamily: font,
       extensions: [extension],
       appBarTheme: AppBarTheme(
         elevation: 0,

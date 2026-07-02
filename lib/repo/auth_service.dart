@@ -8,6 +8,7 @@ import 'dart:convert';
 
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../model/account_status_model.dart';
 import '../model/comment_model.dart';
 import '../model/diary_entry_model.dart';
 import '../model/notification_model.dart';
@@ -1224,5 +1225,20 @@ class AuthService {
       }
     }
     return streak;
+  }
+
+  Stream<AccountStatusModel?> getAccountStatusStream(String uid) {
+    return _firestore
+        .collection('account_status')
+        .doc(uid)
+        .snapshots()
+        .asyncMap((doc) async {
+      if (!doc.exists) {
+        final initial = AccountStatusModel.initial(uid);
+        await _firestore.collection('account_status').doc(uid).set(initial.toMap());
+        return initial;
+      }
+      return AccountStatusModel.fromMap(doc.data()!);
+    });
   }
 }
