@@ -12,7 +12,7 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   try {
     await GoogleSignIn.instance.initialize();
-  } catch (_) {}
+  } catch (_) {go
   await ThemeController().load();
   runApp(const MyApp());
 }
