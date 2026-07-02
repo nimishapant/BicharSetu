@@ -72,7 +72,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: bichar.drawerBackground,
-      drawer: const AppNavigationDrawer(),
+      drawer: AppNavigationDrawer(
+        onSearchTap: () {
+          setState(() => _selectedIndex = 1);
+        },
+      ),
       drawerEnableOpenDragGesture: true,
       body: _selectedIndex == 1
           ? const SearchScreen(showBackButton: false)

@@ -105,8 +105,8 @@ class DrawerProfileHeader extends StatelessWidget {
                     ),
                   ),
                   _HeaderIconButton(
-                    icon: Icons.person_add_alt_1_rounded,
-                    tooltip: 'Add account',
+                    icon: Icons.person_add_rounded,
+                    tooltip: 'Add Friend',
                     onTap: onAddAccount,
                   ),
                 ],

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 import 'model/comment_model.dart';
+import 'profile_screen.dart';
 import 'repo/auth_service.dart';
 import 'theme/bichar_theme_extension.dart';
 import 'widgets/mention_text_field.dart';
@@ -385,14 +386,23 @@ class _CommentTileState extends State<_CommentTile> {
 
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // ── Avatar ──
-          Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: _avatarColor(widget.comment.username)),
-            clipBehavior: Clip.antiAlias,
-            child: widget.comment.profilePhoto.isNotEmpty
-                ? Image.network(widget.comment.profilePhoto, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _Initial(name: widget.comment.username))
-                : _Initial(name: widget.comment.username),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ProfileScreen(userId: widget.comment.uid),
+                ),
+              );
+            },
+            child: Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: _avatarColor(widget.comment.username)),
+              clipBehavior: Clip.antiAlias,
+              child: widget.comment.profilePhoto.isNotEmpty
+                  ? Image.network(widget.comment.profilePhoto, fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _Initial(name: widget.comment.username))
+                  : _Initial(name: widget.comment.username),
+            ),
           ),
           const SizedBox(width: 8),
 
@@ -418,12 +428,21 @@ class _CommentTileState extends State<_CommentTile> {
                     // Name row
                     Row(children: [
                       Expanded(
-                        child: Text(
-                          widget.comment.username.isNotEmpty
-                              ? widget.comment.username[0].toUpperCase() +
-                                  widget.comment.username.substring(1)
-                              : '',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: bichar.textPrimary),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ProfileScreen(userId: widget.comment.uid),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            widget.comment.username.isNotEmpty
+                                ? widget.comment.username[0].toUpperCase() +
+                                    widget.comment.username.substring(1)
+                                : '',
+                            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: bichar.textPrimary),
+                          ),
                         ),
                       ),
                       if (isMe)
@@ -577,14 +596,23 @@ class _ReplyTile extends StatelessWidget {
       padding: const EdgeInsets.only(top: 10),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Avatar
-        Container(
-          width: 30, height: 30,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: _avatarColor(reply.username)),
-          clipBehavior: Clip.antiAlias,
-          child: reply.profilePhoto.isNotEmpty
-              ? Image.network(reply.profilePhoto, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _Initial(name: reply.username))
-              : _Initial(name: reply.username),
+        GestureDetector(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ProfileScreen(userId: reply.uid),
+              ),
+            );
+          },
+          child: Container(
+            width: 30, height: 30,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: _avatarColor(reply.username)),
+            clipBehavior: Clip.antiAlias,
+            child: reply.profilePhoto.isNotEmpty
+                ? Image.network(reply.profilePhoto, fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => _Initial(name: reply.username))
+                : _Initial(name: reply.username),
+          ),
         ),
         const SizedBox(width: 8),
 
@@ -606,11 +634,20 @@ class _ReplyTile extends StatelessWidget {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Expanded(
-                      child: Text(
-                        reply.username.isNotEmpty
-                            ? reply.username[0].toUpperCase() + reply.username.substring(1)
-                            : '',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: bichar.textPrimary),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ProfileScreen(userId: reply.uid),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          reply.username.isNotEmpty
+                              ? reply.username[0].toUpperCase() + reply.username.substring(1)
+                              : '',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: bichar.textPrimary),
+                        ),
                       ),
                     ),
                     if (isMe)

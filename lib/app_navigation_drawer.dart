@@ -24,7 +24,9 @@ const Color _helpBorder = Color(0xFFEDEAF6);
 const Color _helpAccent = Color(0xFF6A3DE8);
 
 class AppNavigationDrawer extends StatefulWidget {
-  const AppNavigationDrawer({super.key});
+  const AppNavigationDrawer({super.key, this.onSearchTap});
+
+  final VoidCallback? onSearchTap;
 
   @override
   State<AppNavigationDrawer> createState() => _AppNavigationDrawerState();
@@ -203,7 +205,11 @@ class _AppNavigationDrawerState extends State<AppNavigationDrawer> {
                         profilePhotoUrl: profilePhotoUrl,
                         onProfileTap: _openProfile,
                         onEditProfile: _openProfile,
-                        onAddAccount: () => _showComingSoon('Add account'),
+                        onAddAccount: () => _closeAndThen(() {
+                          if (widget.onSearchTap != null) {
+                            widget.onSearchTap!();
+                          }
+                        }),
                         followersCount: followersCount,
                         followingCount: followingCount,
                       ),
